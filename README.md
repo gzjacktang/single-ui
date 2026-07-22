@@ -16,7 +16,31 @@
 bash <(curl -sL https://raw.githubusercontent.com/gzjacktang/single-ui/main/install.sh)
 ```
 
-安装时会交互设置面板端口、多级路径、管理员用户名和密码，并选择使用 IP 或域名访问。域名模式会自动申请 Let's Encrypt 证书并开启续签。安装完成后使用 `slinx` 命令管理面板。
+安装脚本会交互设置：
+
+- 面板监听端口（系统保留端口会自动拒绝）
+- 面板路径（支持 `/private/admin/panel` 这样的多级路径）
+- 管理员用户名和密码
+- 使用服务器 IP 或域名访问
+
+选择域名访问时，请先将域名解析到本机，并确保 TCP 80 端口可被公网访问。安装程序会自动注册 Let's Encrypt、申请面板证书、启用 HTTPS，并由后台任务自动续签。
+
+安装完成后，使用 `slinx` 进入终端管理菜单。面板端口只在安装阶段设置，面板设置页面不会提供端口修改项。
+
+### 手动初始化
+
+安装脚本会调用内置的 `setup` 命令。需要手动初始化时，可以使用：
+
+```bash
+cd /etc/slinx
+SLINX_SETUP_PASSWORD='your-password' ./slinx setup \
+  --port 2053 \
+  --path /private/admin/panel \
+  --username admin_user \
+  --access ip
+```
+
+域名模式还需要增加 `--domain` 和 `--email` 参数。用户名和密码至少 6 位；密码通过环境变量传入，不会出现在命令参数列表中。
 
 ## 简介
 
@@ -25,12 +49,19 @@ SLINX node 是一个基于 sing-box 核心的轻量节点管理面板，专注�
 ## 功能
 
 - 🚀 基于 sing-box 核心，支持 VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS 和 Tunnel 转发
-- 🎯 Reality SNI 目标扫描与可用性检查
+- 🎯 Reality SNI 目标扫描与可用性检查，支持域名、IP 和 CIDR 网段，自动过滤内网地址并从证书发现可用 SNI
 - 📜 证书管理，支持 Let's Encrypt、ZeroSSL，DNS/HTTP 验证和自动续签
 - 👥 多用户管理，单节点链接可复制或使用二维码分享
 - 🌐 端点管理（WireGuard / Cloudflare WARP），支持一键注册换IP与路由规则绑定
 - 🔍 IP 检测、解锁检测、回程检测
 - 🔄 一键更新，支持核心独立更新
+
+## 功能边界
+
+- 不提供机器资源监控仪表盘，也不会启动 CPU、内存、流量等监控任务。
+- 不提供订阅服务、订阅端口或订阅页面；用户分享使用单节点链接、复制和二维码。
+- 不提供面板对接和同步功能。
+- 管理员可以在“面板设置”中修改用户名和密码；修改路径后需要按页面提示重启面板。
 
 ## 关于本项目
 
