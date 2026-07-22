@@ -1,12 +1,13 @@
 export const protocolMap: Record<string, string> = {
-    vless: 'primary',
-    vmess: 'green',
-    hysteria: 'blue',
-    trojan: 'purple',
-    tuic: 'orange',
-    anytls: 'yellow',
+  vless: 'primary',
+  vmess: 'green',
+  hysteria: 'blue',
+  trojan: 'purple',
+  tuic: 'orange',
+  anytls: 'yellow',
+  tunnel: 'red',
 }
 
 export function protocol(value: string): string {
-    return protocolMap[value] ?? 'gray'
+  return protocolMap[value] ?? 'gray'
 }

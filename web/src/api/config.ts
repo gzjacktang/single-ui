@@ -1,18 +1,22 @@
-import { request } from '@/util/request'
+import { request, withPanelPath } from '@/util/request'
 
 export const getConfig = () => request('/api/config')
 
-export const updateConfig = (data: any) => request('/api/config', {
+export const updateConfig = (data: any) =>
+  request('/api/config', {
     method: 'PUT',
-    body: JSON.stringify(data)
-})
+    body: JSON.stringify(data),
+  })
 
-export const resetConfig = () => request('/api/config/reset', {
-    method: 'POST'
-})
+export const resetConfig = () =>
+  request('/api/config/reset', {
+    method: 'POST',
+  })
 
 export const Log = () => {
-    const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const token = localStorage.getItem('token') ?? ''
-    return new WebSocket(`${protocol}//${location.host}/api/log/slinx?token=${token}`)
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  const token = localStorage.getItem('token') ?? ''
+  return new WebSocket(
+    `${protocol}//${location.host}${withPanelPath('/api/log/slinx')}?token=${token}`,
+  )
 }

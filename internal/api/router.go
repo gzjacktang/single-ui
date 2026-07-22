@@ -4,15 +4,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func RegisterRoutes(r *gin.Engine) {
+func RegisterRoutes(r *gin.Engine, panelPath string) {
 	// 公开
-	public := r.Group("/api")
+	public := r.Group(panelPath + "/api")
 	{
 		public.POST("/auth/login", Login)
 	}
 
 	// 内部
-	private := r.Group("/api")
+	private := r.Group(panelPath + "/api")
 	private.Use(AuthMiddleware())
 	{
 		// 流程
@@ -55,13 +55,7 @@ func RegisterRoutes(r *gin.Engine) {
 		private.PUT("/user/save", SaveUser)
 		private.DELETE("/user/:id", DeleteUser)
 		private.PUT("/user/:id/toggle", ToggleUser)
-
-		// 对接
-		private.GET("/board", GetBoards)
-		private.PUT("/board/save", SaveBoard)
-		private.DELETE("/board/:id", DeleteBoard)
-		private.PUT("/board/:id/toggle", ToggleBoard)
-		private.GET("/board/:id/user", GetBoardUser)
+		private.POST("/share/uri", GetSubscriptionUri)
 
 		// 证书
 		private.GET("/cert", GetCert)
@@ -77,19 +71,6 @@ func RegisterRoutes(r *gin.Engine) {
 		private.GET("/dns", GetDnsAccount)
 		private.POST("/dns", SaveDnsAccount)
 		private.DELETE("/dns/:id", DeleteDnsAccount)
-
-		// 订阅
-		private.POST("/sub/uri", GetSubscriptionUri)
-		private.POST("/sub/url", GetSubscriptionUrl)
-		private.POST("/sub/json", GetSubscriptionJson)
-
-		// 规则集
-		private.POST("/ruleset/refresh", RefreshRuleset)
-
-		// 系统
-		private.GET("/system/status", GetSystemStatus)
-		private.GET("/stats", GetStats)
-		private.GET("/system/log", GetSystemLog)
 
 		// 日志
 		private.GET("/log/slinx", SlinxLog)
@@ -132,6 +113,7 @@ func RegisterRoutes(r *gin.Engine) {
 		private.GET("/generate/password", GeneratePassword)
 		private.GET("/generate/wireguard-keypair", GenerateWireguardKeyPair)
 		private.GET("/generate/ech-keypair", GenerateECHKeyPair)
+		private.POST("/reality/scan", ScanRealityTargets)
 
 		// 推送
 		private.GET("/task/:id", TaskLog)

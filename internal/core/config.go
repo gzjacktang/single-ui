@@ -64,6 +64,9 @@ type inbounds struct {
 	Heartbeat         string      `json:"heartbeat,omitempty"`
 	TLS               *tls        `json:"tls,omitempty"`
 	Users             []user      `json:"users,omitempty"`
+	Network           string      `json:"network,omitempty"`
+	OverrideAddress   string      `json:"override_address,omitempty"`
+	OverridePort      int         `json:"override_port,omitempty"`
 }
 
 type transport struct {
@@ -154,14 +157,12 @@ type routeRule struct {
 // ── database loader ──────────────────────────────────────────────────────────
 
 type db struct {
-	Core       database.Core
-	Inbounds   []database.Inbound
-	Users      []database.User
-	Boards     []database.Board
-	BoardUsers map[uint][]database.BoardUser
-	Endpoints  []database.Endpoint
-	Rules      []database.Rule
-	UserNames  []string
+	Core      database.Core
+	Inbounds  []database.Inbound
+	Users     []database.User
+	Endpoints []database.Endpoint
+	Rules     []database.Rule
+	UserNames []string
 }
 
 func loadDatabase() (db, error) {
@@ -172,26 +173,8 @@ func loadDatabase() (db, error) {
 	database.DB.Where("enable = ?", true).Find(&d.Endpoints)
 	database.DB.Order("sort asc, `index` asc").Find(&d.Rules)
 
-	var config database.Config
-	database.DB.First(&config)
-
-	if config.BoardEnable {
-		database.DB.Where("enable = ?", true).Find(&d.Boards)
-		d.BoardUsers = make(map[uint][]database.BoardUser)
-		for _, b := range d.Boards {
-			var bu []database.BoardUser
-			database.DB.Where("board_id = ?", b.ID).Find(&bu)
-			d.BoardUsers[b.ID] = bu
-		}
-	}
-
 	for _, u := range d.Users {
 		d.UserNames = append(d.UserNames, u.Name)
-	}
-	for _, bus := range d.BoardUsers {
-		for _, bu := range bus {
-			d.UserNames = append(d.UserNames, fmt.Sprintf("BoardUser_%d", bu.UserID))
-		}
 	}
 
 	return d, nil
@@ -243,15 +226,7 @@ func generateConfig() error {
 			}
 		}
 
-		var boardUsers []database.BoardUser
-		for _, b := range d.Boards {
-			if b.Inbound != int(ib.ID) {
-				continue
-			}
-			boardUsers = append(boardUsers, d.BoardUsers[b.ID]...)
-		}
-
-		users := buildUsers(ib.Protocol, ibUsers, boardUsers, ib.Flow)
+		users := buildUsers(ib.Protocol, ibUsers, nil, ib.Flow)
 		ic, err := buildInbound(ib, users)
 		if err != nil {
 			continue
@@ -308,8 +283,21 @@ func buildInbound(ib database.Inbound, users []user) (inbounds, error) {
 		return buildTuic(ib, users)
 	case "anytls":
 		return buildAnytls(ib, users)
+	case "tunnel":
+		return buildTunnel(ib)
 	}
 	return inbounds{}, fmt.Errorf("unsupported protocol: %s", ib.Protocol)
+}
+
+func buildTunnel(ib database.Inbound) (inbounds, error) {
+	ic := buildBase(ib)
+	ic.Type = "direct"
+	ic.OverrideAddress = ib.TunnelAddress
+	ic.OverridePort = ib.TunnelPort
+	if ib.TunnelNetwork == "tcp" || ib.TunnelNetwork == "udp" {
+		ic.Network = ib.TunnelNetwork
+	}
+	return ic, nil
 }
 
 func buildVless(ib database.Inbound, users []user) (inbounds, error) {

@@ -1,16 +1,16 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { configStore } from '@/store/config'
 import Auth from '../view/auth/Login.vue'
 import Panel from '../view/panel/Panel.vue'
-import Sub from '../view/sub/Sub.vue'
+
+const panelPath = (window.__PANEL_PATH__ || '/').replace(/\/?$/, '/')
 
 const router = createRouter({
-  history: createWebHistory(window.__PANEL_PATH__ || '/'),
+  history: createWebHistory(panelPath),
   routes: [
     {
       path: '/login',
       component: Auth,
-      meta: { title: 'SLINX · 登录' }
+      meta: { title: 'SLINX · 登录' },
     },
     {
       path: '/',
@@ -18,60 +18,45 @@ const router = createRouter({
       children: [
         {
           path: '',
-          redirect: '/dashboard'
-        },
-        {
-          path: 'dashboard',
-          component: () => import('../view/panel/dashboard/Dashboard.vue'),
-          meta: { title: 'SLINX · 仪表盘' }
+          redirect: '/inbound',
         },
         {
           path: 'inbound',
           component: () => import('../view/panel/inbound/Inbound.vue'),
-          meta: { title: 'SLINX · 入站管理' }
+          meta: { title: 'SLINX · 入站管理' },
         },
         {
           path: 'user',
           component: () => import('../view/panel/user/User.vue'),
-          meta: { title: 'SLINX · 用户管理' }
+          meta: { title: 'SLINX · 用户管理' },
         },
         {
           path: 'endpoint',
           component: () => import('../view/panel/endpoint/Endpoint.vue'),
-          meta: { title: 'SLINX · 端点管理' }
-        },
-        {
-          path: 'board',
-          component: () => import('../view/panel/board/Board.vue'),
-          meta: { title: 'SLINX · 面板对接' }
+          meta: { title: 'SLINX · 端点管理' },
         },
         {
           path: 'detect',
           component: () => import('../view/panel/detect/Detect.vue'),
-          meta: { title: 'SLINX · IP检测' }
+          meta: { title: 'SLINX · IP检测' },
         },
         {
           path: 'core',
           component: () => import('../view/panel/core/Core.vue'),
-          meta: { title: 'SLINX · 核心配置' }
+          meta: { title: 'SLINX · 核心配置' },
         },
         {
           path: 'config',
           component: () => import('../view/panel/config/Config.vue'),
-          meta: { title: 'SLINX · 面板配置' }
+          meta: { title: 'SLINX · 面板配置' },
         },
-      ]
-    },
-    {
-      path: '/sub/:token',
-      component: Sub,
-      meta: { title: 'SLINX · 订阅' }
+      ],
     },
     {
       path: '/:pathMatch(.*)*',
-      redirect: '/login'
-    }
-  ]
+      redirect: '/login',
+    },
+  ],
 })
 
 router.beforeEach((to) => {
@@ -83,8 +68,8 @@ router.beforeEach((to) => {
     return '/'
   }
 
-  if (!token && to.path !== '/login' && !to.path.startsWith(configStore.SubPath)) {
-      return '/login'
+  if (!token && to.path !== '/login') {
+    return '/login'
   }
 })
 

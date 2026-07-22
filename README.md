@@ -3,12 +3,8 @@
   <h1>SLINX node</h1>
   <p>基于 sing-box 核心的节点管理面板</p>
 
-  [![Release](https://img.shields.io/github/v/release/slinxlink/node)](https://github.com/slinxlink/node/releases)
-  [![Go Version](https://img.shields.io/github/go-mod/go-version/slinxlink/node.svg)](https://github.com/slinxlink/node)
-  [![Downloads](https://img.shields.io/github/downloads/slinxlink/node/total.svg)](https://github.com/slinxlink/node/releases/latest)
+	[![Release](https://img.shields.io/github/v/release/gzjacktang/single-ui)](https://github.com/gzjacktang/single-ui/releases)
   [![License](https://img.shields.io/badge/license-MIT-blue.svg?longCache=true)](LICENSE)
-  [![Go Reference](https://pkg.go.dev/badge/github.com/slinxlink/node.svg)](https://pkg.go.dev/github.com/slinxlink/node)
-  [![Go Report Card](https://goreportcard.com/badge/github.com/slinxlink/node)](https://goreportcard.com/report/github.com/slinxlink/node)
 </div>
 
 > [!IMPORTANT]
@@ -17,23 +13,21 @@
 ## 安装
 
 ```bash
-bash <(curl -sL https://raw.githubusercontent.com/slinxlink/node/main/install.sh)
+bash <(curl -sL https://raw.githubusercontent.com/gzjacktang/single-ui/main/install.sh)
 ```
 
-安装完成后使用 `slinx` 命令管理面板。
+安装时会交互设置面板端口、多级路径、管理员用户名和密码，并选择使用 IP 或域名访问。域名模式会自动申请 Let's Encrypt 证书并开启续签。安装完成后使用 `slinx` 命令管理面板。
 
 ## 简介
 
-SLINX node 是一个基于 sing-box 核心的节点管理面板，提供完善的证书管理、机场面板对接、一键节点生成，支持通用、Clash 等多种订阅格式。
+SLINX node 是一个基于 sing-box 核心的轻量节点管理面板，专注入站、用户、端口转发、证书和网络端点管理。
 
 ## 功能
 
-- 🚀 基于 sing-box 核心，支持 VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS 协议
-- 📜 证书管理，支持 Let's Encrypt、ZeroSSL，DNS/HTTP 验证
-- 🔗 机场面板对接（SSPanel），自动同步用户与流量
-- 📦 多种订阅格式，支持通用、Clash、Surge、sing-box JSON
-- 👥 多用户管理
-- 📊 实时系统监控、流量统计
+- 🚀 基于 sing-box 核心，支持 VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS 和 Tunnel 转发
+- 🎯 Reality SNI 目标扫描与可用性检查
+- 📜 证书管理，支持 Let's Encrypt、ZeroSSL，DNS/HTTP 验证和自动续签
+- 👥 多用户管理，单节点链接可复制或使用二维码分享
 - 🌐 端点管理（WireGuard / Cloudflare WARP），支持一键注册换IP与路由规则绑定
 - 🔍 IP 检测、解锁检测、回程检测
 - 🔄 一键更新，支持核心独立更新
@@ -42,13 +36,12 @@ SLINX node 是一个基于 sing-box 核心的节点管理面板，提供完善�
 
 SLINX node 专为普通自建节点用户设计，化繁为简，让搭建节点不再是门槛。
 
-整个使用流程极其简单：登录终端 → 粘贴安装脚本 → 打开面板 → 点击一键生成 → 复制订阅链接，即可上手使用。
+整个使用流程极其简单：登录终端 → 运行安装脚本完成初始设置 → 打开面板 → 添加入站和用户 → 复制节点链接。
 
 本项目不追求功能堆砌，只做普通用户真正需要的功能。
 
 ## 截图
 
-![Dashboard](doc/dashboard.png)
 ![Detection](doc/detect.png)
 ![Inbound](doc/inbound.png)
 
@@ -60,23 +53,9 @@ SLINX node 专为普通自建节点用户设计，化繁为简，让搭建节点
 
 ## 协议
 
-当前支持：VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS、WireGuard（出站）
+当前支持：VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS、Tunnel（TCP/UDP 转发）、WireGuard（出站）
 
 计划支持：Shadowsocks、ShadowTLS
-
-## 订阅
-
-当前支持：通用订阅、Clash、Surge、sing-box JSON
-
-Clash/Surge 订阅为完整规则集订阅，包含流媒体、AI、通讯、游戏等分组，规则集每周自动更新。
-
-计划支持：规则集自定义
-
-## 机场对接
-
-初版只支持对接自研机场
-
-v2 版本计划支持：SSPanel、v2board
 
 ## 多语言支持
 

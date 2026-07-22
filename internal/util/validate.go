@@ -1,7 +1,9 @@
 package util
 
 import (
+	"fmt"
 	"net"
+	"net/url"
 	"regexp"
 	"strings"
 )
@@ -55,6 +57,28 @@ func ValidateDomain(domain string) bool {
 }
 
 var tagPattern = regexp.MustCompile(`^[a-zA-Z][a-zA-Z0-9_-]*$`)
+var panelPathSegmentPattern = regexp.MustCompile(`^[a-zA-Z0-9._~-]+$`)
+
+func NormalizePanelPath(value string) (string, error) {
+	value = strings.TrimSpace(value)
+	if value == "" || value == "/" || !strings.HasPrefix(value, "/") {
+		return "", fmt.Errorf("路径必须以 '/' 开头且不能为根路径")
+	}
+	if strings.ContainsAny(value, "?#\\") {
+		return "", fmt.Errorf("路径不能包含查询、锚点或反斜杠")
+	}
+	value = strings.TrimSuffix(value, "/")
+	parsed, err := url.ParseRequestURI(value)
+	if err != nil || parsed.Path != value {
+		return "", fmt.Errorf("路径格式不正确")
+	}
+	for _, segment := range strings.Split(strings.TrimPrefix(value, "/"), "/") {
+		if segment == "" || segment == "." || segment == ".." || !panelPathSegmentPattern.MatchString(segment) {
+			return "", fmt.Errorf("路径每一段只能包含字母、数字、点、下划线、横线或波浪号")
+		}
+	}
+	return value, nil
+}
 
 func ValidateTag(tag string) string {
 	if tag == "" {

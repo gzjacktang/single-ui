@@ -10,12 +10,12 @@ export default defineConfig(({ mode }) => ({
     vueDevTools(),
     AutoImport({
       imports: ['vue', 'vue-router'],
-      dts: true
-    })
+      dts: true,
+    }),
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
   build: {
@@ -23,20 +23,22 @@ export default defineConfig(({ mode }) => ({
     rollupOptions: {
       input: {
         main: fileURLToPath(new URL('./index.html', import.meta.url)),
-        sub: fileURLToPath(new URL('./sub.html', import.meta.url)),
       },
       output: {
         entryFileNames: 'assets/[name]-[hash].js',
-      }
-    }
+      },
+    },
   },
-  server: mode === 'development' ? {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:11111',
-        changeOrigin: true,
-        ws: true
-      }
-    }
-  } : {}
+  server:
+    mode === 'development'
+      ? {
+          proxy: {
+            '/api': {
+              target: 'http://localhost:11111',
+              changeOrigin: true,
+              ws: true,
+            },
+          },
+        }
+      : {},
 }))

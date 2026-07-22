@@ -8,6 +8,7 @@ import (
 	"github.com/slinxlink/node/internal/bootstrap"
 	"github.com/slinxlink/node/internal/cli"
 	"github.com/slinxlink/node/internal/server"
+	"github.com/slinxlink/node/internal/setup"
 )
 
 var Version = "dev"
@@ -16,10 +17,12 @@ var Version = "dev"
 var webFS embed.FS
 
 func main() {
-	os.Chdir("var")
-
 	if len(os.Args) > 1 && os.Args[1] == "cli" {
 		cli.Start(Version)
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "setup" {
+		setup.ExitOnError(setup.Command(os.Args[2:]))
 		return
 	}
 	app.Version = Version

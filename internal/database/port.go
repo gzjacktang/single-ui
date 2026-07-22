@@ -5,7 +5,7 @@ func UsedPorts(excludeID ...uint) []int {
 
 	var config Config
 	DB.First(&config)
-	ports = append(ports, config.Port, config.SubPort)
+	ports = append(ports, config.Port)
 
 	var inbounds []Inbound
 	if len(excludeID) > 0 {

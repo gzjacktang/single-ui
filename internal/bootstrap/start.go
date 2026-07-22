@@ -11,7 +11,6 @@ import (
 	"github.com/slinxlink/node/internal/job"
 	"github.com/slinxlink/node/internal/server"
 	"github.com/slinxlink/node/internal/service"
-	syncer "github.com/slinxlink/node/internal/sync"
 	"github.com/slinxlink/node/internal/util"
 )
 
@@ -43,10 +42,6 @@ func Start() {
 	}
 
 	// ── 6 启动订阅服务 ─────────────────────────────────────────────────────
-	if err := server.StartSub(); err != nil {
-		util.Error("[server] 订阅服务启动失败: %v", err)
-	}
-
 	// ── 7. 启动 sing-box 核心 ────────────────────────────────────────────────
 	if err := core.Default.Start(); err != nil {
 		cli.Status("核心", "启动失败", false)
@@ -60,16 +55,9 @@ func Start() {
 	}
 
 	// ── 8. 启动面板对接同步 ──────────────────────────────────────────────────
-	if config.BoardEnable {
-		syncer.Start()
-	}
-
 	// ── 9. 启动后台任务 ──────────────────────────────────────────────────────
-	job.Stats()
-	job.SystemLog()
 	job.CoreLogRotate()
 	job.CertRenew()
-	job.RulesetRefresh()
 
 	// ── 10. 收尾：更新启动时间、获取公网 IP ──────────────────────────────────
 	database.DB.Model(&database.Config{}).Where("id = 1").Update("started_at", time.Now())

@@ -2,11 +2,29 @@ package api
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/slinxlink/node/internal/database"
+	"github.com/slinxlink/node/internal/service"
 	"github.com/slinxlink/node/internal/util"
 )
+
+func ScanRealityTargets(c *gin.Context) {
+	var request struct {
+		Targets string `json:"targets"`
+	}
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "参数错误"})
+		return
+	}
+	results, err := service.ScanRealityTargets(strings.TrimSpace(request.Targets))
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"results": results})
+}
 
 func GeneratePort(c *gin.Context) {
 	usedPorts := database.UsedPorts()

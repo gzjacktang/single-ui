@@ -5,10 +5,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/core"
 	"github.com/slinxlink/node/internal/database"
 	"github.com/slinxlink/node/internal/service"
-	"github.com/slinxlink/node/internal/sync"
 	"github.com/slinxlink/node/internal/util"
 )
 
@@ -28,31 +26,12 @@ func UpdateConfig(c *gin.Context) {
 	var prev database.Config
 	database.DB.First(&prev)
 
-	usedPorts := database.UsedPorts()
-
-	if req.Port != prev.Port {
-		if msg := util.ValidatePort(req.Port, usedPorts); msg != "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
-			return
-		}
-	}
-
-	if !strings.HasPrefix(req.Path, "/") || strings.Count(req.Path, "/") != 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "路径必须以 '/' 开头且只能有一个 '/'"})
+	path, err := util.NormalizePanelPath(req.Path)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	if req.SubPort != prev.SubPort {
-		if msg := util.ValidatePort(req.SubPort, usedPorts); msg != "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": msg})
-			return
-		}
-	}
-
-	if !strings.HasPrefix(req.SubPath, "/") || strings.Count(req.SubPath, "/") != 1 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "订阅路径必须以 '/' 开头且只能有一个 '/'"})
-		return
-	}
+	req.Path = path
 
 	if req.LogPath != "" && !strings.HasSuffix(req.LogPath, ".log") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "日志路径必须以 .log 结尾"})
@@ -60,17 +39,21 @@ func UpdateConfig(c *gin.Context) {
 	}
 
 	req.ID = prev.ID
+	req.Username = prev.Username
+	req.Password = prev.Password
+	req.SecretKey = prev.SecretKey
+	req.Port = prev.Port
+	req.IPv4 = prev.IPv4
+	req.IPv6 = prev.IPv6
+	req.StartedAt = prev.StartedAt
+	req.Repo = prev.Repo
+	req.SubEnable = false
+	req.SubPath = ""
+	req.SubPort = 0
+	req.BoardEnable = false
 	database.DB.Save(&req)
 
 	util.InitLog(req.LogPath, req.LogLevel, req.LogEnable)
-
-	if prev.BoardEnable && !req.BoardEnable {
-		sync.Stop()
-		go core.Default.Apply()
-	} else if !prev.BoardEnable && req.BoardEnable {
-		sync.Start()
-		go core.Default.Apply()
-	}
 
 	if req.BBR != prev.BBR {
 		service.BBRApply(req.BBR)
@@ -86,23 +69,22 @@ func ResetConfig(c *gin.Context) {
 
 	ipv4, ipv6 := util.GetPublicIPs()
 	config := database.Config{
-		SecretKey:         util.GenerateString(32),
-		Username:          "admin",
-		Password:          util.GenerateString(12),
-		Port:              util.GeneratePort(),
-		Path:              "/" + util.GenerateString(8),
+		SecretKey:         prev.SecretKey,
+		Username:          prev.Username,
+		Password:          prev.Password,
+		Port:              prev.Port,
+		Path:              prev.Path,
 		IPv4:              ipv4,
 		IPv6:              ipv6,
-		SubEnable:         true,
-		SubPath:           "/link",
-		SubPort:           2096,
+		Domain:            prev.Domain,
+		SubEnable:         false,
 		RulesetAutoUpdate: false,
 		LogEnable:         true,
 		LogLevel:          "info",
 		LogPath:           "data/slinx.log",
 		BBR:               true,
 		BoardEnable:       false,
-		Repo:              "https://github.com/slinxlink/node",
+		Repo:              "https://github.com/gzjacktang/single-ui",
 	}
 	config.ID = prev.ID
 

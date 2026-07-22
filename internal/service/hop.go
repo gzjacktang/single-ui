@@ -28,7 +28,7 @@ func getExcludedPorts() []int {
 	var config database.Config
 	database.DB.First(&config)
 
-	excluded := []int{config.Port, config.SubPort}
+	excluded := []int{config.Port}
 
 	for p := range util.ReservedPorts {
 		excluded = append(excluded, p)

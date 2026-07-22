@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/slinxlink/node/internal/core"
@@ -32,6 +33,29 @@ func SaveInbound(c *gin.Context) {
 	if msg := util.ValidatePort(ib.Port, usedPorts); msg != "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": msg})
 		return
+	}
+
+	supported := map[string]bool{"vless": true, "vmess": true, "hysteria": true, "trojan": true, "tuic": true, "anytls": true, "tunnel": true}
+	if !supported[ib.Protocol] {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "不支持的入站协议"})
+		return
+	}
+	if ib.Protocol == "tunnel" {
+		ib.TunnelAddress = strings.TrimSpace(ib.TunnelAddress)
+		if ib.TunnelAddress == "" || strings.ContainsAny(ib.TunnelAddress, " /\\") {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "请填写正确的转发目标地址"})
+			return
+		}
+		if ib.TunnelPort < 1 || ib.TunnelPort > 65535 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "转发目标端口必须在 1-65535 之间"})
+			return
+		}
+		if ib.TunnelNetwork != "tcp" && ib.TunnelNetwork != "udp" && ib.TunnelNetwork != "tcp,udp" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "转发网络只能是 TCP、UDP 或 TCP+UDP"})
+			return
+		}
+		ib.TLSType = "none"
+		ib.HopEnabled = false
 	}
 
 	if ib.ObfsType != "" {
@@ -150,9 +174,6 @@ func DeleteInbound(c *gin.Context) {
 		updated, _ := json.Marshal(newIDs)
 		database.DB.Model(&u).Update("inbounds", string(updated))
 	}
-
-	// 清理 Board 表里关联该入站的引用
-	database.DB.Where("inbound = ?", id).Update("inbound", 0)
 
 	// 清理 Rule 表里关联该入站的引用
 	route.CleanupRule("inbound", fmt.Sprintf("%d", ib.Port), "")

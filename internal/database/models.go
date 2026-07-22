@@ -5,8 +5,8 @@ import "time"
 type Config struct {
 	ID        uint `gorm:"primarykey"`
 	Username  string
-	Password  string
-	SecretKey string
+	Password  string `json:"-"`
+	SecretKey string `json:"-"`
 
 	Port   int
 	Path   string
@@ -14,16 +14,16 @@ type Config struct {
 	IPv4   string
 	IPv6   string
 
-	SubEnable         bool
-	SubPath           string
-	SubPort           int
+	SubEnable         bool   `json:"-"`
+	SubPath           string `json:"-"`
+	SubPort           int    `json:"-"`
 	RulesetAutoUpdate bool
 
 	LogEnable bool
 	LogLevel  string
 	LogPath   string
 
-	BoardEnable bool
+	BoardEnable bool `json:"-"`
 
 	BBR bool
 
@@ -100,7 +100,7 @@ type Inbound struct {
 	ID        uint `gorm:"primarykey"`
 	Enable    bool
 	Name      string // 备注名
-	Protocol  string // vless / vmess / hysteria / trojan / tuic
+	Protocol  string // vless / vmess / hysteria / trojan / tuic / anytls / tunnel
 	Port      int    // 监听端口
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -142,6 +142,11 @@ type Inbound struct {
 	AnyTLSIdleSessionCheckInterval int // 空闲会话检测间隔，秒，0 表示默认 30
 	AnyTLSIdleSessionTimeout       int // 空闲会话超时，秒，0 表示默认 30
 	AnyTLSMinIdleSession           int // 最小空闲会话数，0 表示默认 1
+
+	// Tunnel（TCP/UDP 端口转发）
+	TunnelAddress string // 目标域名或 IP
+	TunnelPort    int    // 目标端口
+	TunnelNetwork string // tcp / udp / tcp,udp
 
 	// 通用 TLS
 	TLSType       string // none / TLS / Reality

@@ -1,47 +1,47 @@
 <template>
-    <nav :class="{ collapse: Shrink }">
-        <div class="header">
-            <img src="@/asset/image/logo.webp" alt="SLINX" />
-            <label class="title shrink">
-                <strong>SLINX</strong>
-                <span>节点管理</span>
-            </label>
-            <button class="menu" @click="Menu = !Menu">
-                <i class="icon" :class="{ active: Menu }">{{ Menu ? 'close' : 'menu' }}</i>
-            </button>
-        </div>
-        <ul class="link" :class="{ visible: Menu}">
-            <li>
-                <button class="shrink-btn circle" @click="Shrink = !Shrink">
-                    <i class="icon">chevron_right</i>
-                </button>
-            </li>
-            <template v-for="link in links" :key="link.to ?? link.divider">
-                <li v-if="link.divider">
-                    <div class="divider-notext"></div>
-                </li>
-                <li v-else>
-                    <router-link :to="link.to!">
-                        <i class="icon">{{ link.icon }}</i>
-                        <span class="shrink">{{ link.label }}</span>
-                    </router-link>
-                </li>
-            </template>
-        </ul>
-        <div class="footer" :class="{ visible: Menu}">
-            <button @click="navFooter = !navFooter">
-                <span class="circle lg">{{ configStore.Username.charAt(0) }}</span>
-                <span class="shrink">{{ configStore.Username }}</span>
-                <i class="icon shrink">more_vert</i>
-            </button>
-            <div class="content" :class="{ active: navFooter }">
-                <a @click.prevent="logout">
-                    <i class="icon">logout</i>
-                    <span class="shrink">登出</span>
-                </a>
-            </div>
-        </div>
-    </nav>
+  <nav :class="{ collapse: Shrink }">
+    <div class="header">
+      <img src="@/asset/image/logo.webp" alt="SLINX" />
+      <label class="title shrink">
+        <strong>SLINX</strong>
+        <span>节点管理</span>
+      </label>
+      <button class="menu" @click="Menu = !Menu">
+        <i class="icon" :class="{ active: Menu }">{{ Menu ? 'close' : 'menu' }}</i>
+      </button>
+    </div>
+    <ul class="link" :class="{ visible: Menu }">
+      <li>
+        <button class="shrink-btn circle" @click="Shrink = !Shrink">
+          <i class="icon">chevron_right</i>
+        </button>
+      </li>
+      <template v-for="link in links" :key="link.to ?? link.divider">
+        <li v-if="link.divider">
+          <div class="divider-notext"></div>
+        </li>
+        <li v-else>
+          <router-link :to="link.to!">
+            <i class="icon">{{ link.icon }}</i>
+            <span class="shrink">{{ link.label }}</span>
+          </router-link>
+        </li>
+      </template>
+    </ul>
+    <div class="footer" :class="{ visible: Menu }">
+      <button @click="navFooter = !navFooter">
+        <span class="circle lg">{{ configStore.Username.charAt(0) }}</span>
+        <span class="shrink">{{ configStore.Username }}</span>
+        <i class="icon shrink">more_vert</i>
+      </button>
+      <div class="content" :class="{ active: navFooter }">
+        <a @click.prevent="logout">
+          <i class="icon">logout</i>
+          <span class="shrink">登出</span>
+        </a>
+      </div>
+    </div>
+  </nav>
 </template>
 
 <script setup lang="ts">
@@ -55,278 +55,287 @@ const navFooter = ref(false)
 const route = useRoute()
 
 const links = computed(() => [
-    { to: '/dashboard', icon: 'dashboard',      label: '仪表盘' },
-    { divider: true },
-    { to: '/inbound',   icon: 'add_link',       label: '入站' },
-    { to: '/user',      icon: 'rss_feed',       label: '用户' },
-    { to: '/endpoint',  icon: 'cloud_sync',     label: '端点' },
-    ...(configStore.BoardEnable ? [{ to: '/board', icon: 'flight', label: '面板对接' }] : []),
-    { divider: true },
-    { to: '/detect',    icon: 'travel_explore', label: 'IP检测' },
-    { to: '/core',      icon: 'handyman',       label: '核心配置' },
-    { to: '/config',    icon: 'settings',       label: '面板设置' },
+  { to: '/inbound', icon: 'add_link', label: '入站' },
+  { to: '/user', icon: 'rss_feed', label: '用户' },
+  { to: '/endpoint', icon: 'cloud_sync', label: '端点' },
+  { divider: true },
+  { to: '/detect', icon: 'travel_explore', label: 'IP检测' },
+  { to: '/core', icon: 'handyman', label: '核心配置' },
+  { to: '/config', icon: 'settings', label: '面板设置' },
 ])
 
 onMounted(() => loadConfig())
 
 async function logout() {
-    await logoutApi()
-    localStorage.removeItem('token')
-    router.push('/login')
+  await logoutApi()
+  localStorage.removeItem('token')
+  router.push('/login')
 }
 
-watch(() => route.path, () => {
+watch(
+  () => route.path,
+  () => {
     Menu.value = false
-})
+  },
+)
 </script>
 
 <style scoped>
 nav {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--color-bg-dark);
+  z-index: 99;
+  box-shadow: var(--box-shadow);
+
+  &.collapse {
+    .shrink {
+      max-width: 999px;
+      visibility: visible;
+    }
+    .shrink-btn {
+      transform: rotate(180deg);
+    }
+  }
+  &:not(.collapse) {
+    .header {
+      gap: 0;
+    }
+    a {
+      gap: 0;
+    }
+    .footer button {
+      gap: 0;
+    }
+  }
+
+  .shrink {
+    display: flex;
+    visibility: hidden;
+    max-width: 0;
+    transition: max-width 0.3s ease;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
+  .header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+    height: 80px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--color-bg);
+    transition: gap 0.3s ease;
+
+    img {
+      width: 40px;
+      height: 40px;
+    }
+
+    .title {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      align-items: baseline;
+
+      strong {
+        color: var(--color-text-light);
+        font-size: var(--font-size-xl);
+        font-weight: bold;
+      }
+      span {
+        color: var(--color-text-dark);
+        font-size: var(--font-size-sm);
+      }
+    }
+    .menu {
+      display: none;
+      margin-left: auto;
+      padding: 10px;
+      border-radius: 5px;
+      background-color: var(--color-bg-dark);
+
+      .icon {
+        transition: 0.3s ease;
+
+        &.active {
+          transform: rotate(180deg);
+        }
+      }
+
+      &:hover {
+        background-color: var(--color-primary);
+      }
+      &:active {
+        background-color: var(--color-primary-dark);
+      }
+    }
+  }
+
+  .shrink-btn {
+    margin-left: 15px;
+    transition: 0.3s ease;
+    background-color: var(--color-bg-light);
+    padding: 5px;
+  }
+
+  ul {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    background-color: var(--color-bg-dark);
-    z-index: 99;
-    box-shadow: var(--box-shadow);
+    white-space: nowrap;
+    list-style: none;
+    width: 100%;
+    overflow-y: auto;
+    padding-top: 10px;
+    gap: 10px;
 
-    &.collapse {
-        .shrink {
-            max-width: 999px;
-            visibility: visible;
-        }
-        .shrink-btn {
-            transform: rotate(180deg);
-        }
+    li {
+      padding: 0 10px;
     }
-    &:not(.collapse) {
-        .header {
-            gap: 0;
-        }
-        a {
-            gap: 0;
-        }
-        .footer button {
-            gap: 0;
-        }
+  }
+
+  .footer {
+    padding: 10px;
+    margin-top: auto;
+    border-top: 1px solid var(--color-bg);
+    white-space: nowrap;
+
+    button {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      color: var(--color-text);
+      font-size: var(--font-size-md);
+      width: 100%;
+      padding: 10px;
+      border-radius: 10px;
+      background-color: var(--color-bg-dark);
+      transition:
+        gap 0.3s ease,
+        background-color 0.3s ease;
+      gap: 10px;
+
+      .icon {
+        margin-left: auto;
+      }
+
+      label {
+        flex: 1;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+
+      &:hover {
+        background-color: var(--color-bg-light);
+      }
+      &:active {
+        background-color: var(--color-bg);
+        color: var(--color-text-light);
+      }
     }
+
+    .content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+
+      &.active {
+        max-height: 100px;
+      }
+    }
+  }
+
+  a {
+    display: flex;
+    text-align: left;
+    align-items: center;
+    padding: 10px 20px;
+    color: var(--color-text);
+    gap: 10px;
+    border-radius: 10px;
+    transition:
+      gap 0.3s ease,
+      background-color 0.3s ease;
+
+    &:hover {
+      background-color: var(--color-bg-light);
+      color: var(--color-text);
+    }
+    &:active {
+      background-color: var(--color-bg);
+      color: var(--color-text-light);
+    }
+    &.router-link-active {
+      background-color: var(--color-bg);
+      pointer-events: none;
+      color: var(--color-text-light);
+    }
+  }
+
+  @media (max-width: 768px) {
+    width: 100%;
+    height: auto;
 
     .shrink {
-        display: flex;
-        visibility: hidden;
-        max-width: 0;
-        transition: max-width 0.3s ease;
-        overflow: hidden;
-        white-space: nowrap;
+      max-width: 999px;
+      visibility: visible;
     }
 
-    .header {
-        display: flex;
-        align-items: center;
+    &:not(.collapse) {
+      .header {
         gap: 10px;
-        padding: 20px;
-        height: 80px;
-        white-space: nowrap;
-        border-bottom: 1px solid var(--color-bg);
-        transition: gap 0.3s ease;
 
-        img {
-            width: 40px;
-            height: 40px;
-        }
-
-        .title {
-            display: flex;
-            flex-direction: row;
-            gap: 10px;
-            align-items: baseline;
-
-            strong {
-                color: var(--color-text-light);
-                font-size: var(--font-size-xl);
-                font-weight: bold;
-            }
-            span {
-                color: var(--color-text-dark);
-                font-size: var(--font-size-sm);
-            }
-        }
         .menu {
-            display: none;
-            margin-left: auto;
-            padding: 10px;
-            border-radius: 5px;
-            background-color: var(--color-bg-dark);
-
-            .icon {
-                transition: 0.3s ease;
-
-                &.active {
-                    transform: rotate(180deg);
-                }
-            }
-
-            &:hover {
-                background-color: var(--color-primary);
-            }
-            &:active {
-                background-color: var(--color-primary-dark);
-            }
+          display: block;
         }
+      }
+      a {
+        gap: 10px;
+      }
+      .footer button {
+        gap: 10px;
+      }
     }
 
     .shrink-btn {
-        margin-left: 15px;
-        transition: 0.3s ease;
-        background-color: var(--color-bg-light);
-        padding: 5px;
+      display: none;
+    }
+
+    ul,
+    .footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      background-color: var(--color-bg-dark);
+      opacity: 0;
+      visibility: hidden;
+      transition:
+        opacity 0.3s ease,
+        visibility 0s 0.3s;
+      pointer-events: none;
+
+      &.visible {
+        opacity: 1;
+        visibility: visible;
+        transition:
+          opacity 0.3s ease,
+          visibility 0s;
+        pointer-events: auto;
+      }
     }
 
     ul {
-        display: flex;
-        flex-direction: column;
-        white-space: nowrap;
-        list-style: none;
-        width: 100%;
-        overflow-y: auto;
-        padding-top: 10px;
-        gap: 10px;
-
-        li {
-            padding: 0 10px;
-        }
+      top: 80px;
+      height: calc(100% - 80px);
     }
 
     .footer {
-        padding: 10px;
-        margin-top: auto;
-        border-top: 1px solid var(--color-bg);
-        white-space: nowrap;
-
-        button {
-            display: flex;
-            flex-direction: row;
-            align-items: center;
-            justify-content: flex-start;
-            color: var(--color-text);
-            font-size: var(--font-size-md);
-            width: 100%;
-            padding: 10px;
-            border-radius: 10px;
-            background-color: var(--color-bg-dark);
-            transition: gap 0.3s ease, background-color 0.3s ease;
-            gap: 10px;
-
-            .icon {
-                margin-left: auto;
-            }
-
-            label {
-                flex: 1;
-                display: flex;
-                flex-direction: row;
-                align-items: center;
-            }
-
-            &:hover {
-                background-color: var(--color-bg-light);
-            }
-            &:active {
-                background-color: var(--color-bg);
-                color: var(--color-text-light);
-            }
-        }
-
-        .content {
-            max-height: 0;
-            overflow: hidden;
-            transition: max-height 0.3s ease-out;
-
-            &.active {
-                max-height: 100px;
-            }
-        }
+      bottom: 0;
     }
-
-    a {
-        display: flex;
-        text-align: left;
-        align-items: center;
-        padding: 10px 20px;
-        color: var(--color-text);
-        gap: 10px;
-        border-radius: 10px;
-        transition: gap 0.3s ease, background-color 0.3s ease;
-
-        &:hover {
-            background-color: var(--color-bg-light);
-            color: var(--color-text);
-        }
-        &:active {
-            background-color: var(--color-bg);
-            color: var(--color-text-light);
-        }
-        &.router-link-active {
-            background-color: var(--color-bg);
-            pointer-events: none;
-            color: var(--color-text-light);
-        }
-    }
-
-    @media (max-width: 768px) {
-        width: 100%;
-        height: auto;
-
-        .shrink {
-            max-width: 999px;
-            visibility: visible;
-        }
-
-        &:not(.collapse) {
-            .header {
-                gap: 10px;
-
-                .menu {
-                    display: block;
-                }
-            }
-            a {
-                gap: 10px;
-            }
-            .footer button {
-                gap: 10px;
-            }
-        }
-
-        .shrink-btn {
-            display: none;
-        }
-
-        ul, .footer {
-            position: fixed;
-            left: 0;
-            right: 0;
-            background-color: var(--color-bg-dark);
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0s 0.3s;
-            pointer-events: none;
-
-            &.visible {
-                opacity: 1;
-                visibility: visible;
-                transition: opacity 0.3s ease, visibility 0s;
-                pointer-events: auto;
-            }
-        }
-
-        ul {
-            top: 80px;
-            height: calc(100% - 80px);
-        }
-
-        .footer {
-            bottom: 0;
-        }
-    }
+  }
 }
 </style>

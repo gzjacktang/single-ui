@@ -17,8 +17,8 @@ import (
 	"gorm.io/gorm/logger"
 )
 
-const releasesURL = "https://github.com/slinxlink/node/releases"
-const releasesAPIURL = "https://api.github.com/repos/slinxlink/node/releases/latest"
+const releasesURL = "https://github.com/gzjacktang/single-ui/releases"
+const releasesAPIURL = "https://api.github.com/repos/gzjacktang/single-ui/releases/latest"
 
 var dir = func() string {
 	exe, _ := os.Executable()
@@ -104,18 +104,25 @@ func resetUrl() string {
 	}
 
 	path := "/" + util.GenerateString(8)
-	port := util.GeneratePort()
 	ipv4, ipv6 := util.GetPublicIPs()
 	if err := db.Model(&database.Config{}).Where("id = 1").Updates(map[string]interface{}{
 		"path": path,
-		"port": port,
 		"ipv4": ipv4,
 		"ipv6": ipv6,
 	}).Error; err != nil {
 		return "保存失败: " + err.Error()
 	}
 
-	url := fmt.Sprintf("http://%s:%d%s", ipv4, port, path)
+	var config database.Config
+	db.First(&config)
+	var url string
+	if config.Domain != "" {
+		url = fmt.Sprintf("https://%s:%d%s", config.Domain, config.Port, path)
+	} else if ipv4 != "" {
+		url = fmt.Sprintf("http://%s:%d%s", ipv4, config.Port, path)
+	} else {
+		url = fmt.Sprintf("http://localhost:%d%s", config.Port, path)
+	}
 
 	runCmd("systemctl", "restart", "slinx")
 

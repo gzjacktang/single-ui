@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"os"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 )
 
 var DB *gorm.DB
+var SQLDB *sql.DB
 
 func Init() (bool, error) {
 	if err := os.MkdirAll("data", 0755); err != nil {
@@ -21,6 +23,10 @@ func Init() (bool, error) {
 	DB, err = gorm.Open(sqlite.Open("data/slinx.db"), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
+	if err != nil {
+		return false, err
+	}
+	SQLDB, err = DB.DB()
 	if err != nil {
 		return false, err
 	}
@@ -93,9 +99,7 @@ func initConfig() (bool, error) {
 		IPv4: ipv4,
 		IPv6: ipv6,
 
-		SubEnable:         true,
-		SubPath:           "/link",
-		SubPort:           2096,
+		SubEnable:         false,
 		RulesetAutoUpdate: true,
 
 		LogEnable: true,
@@ -106,7 +110,7 @@ func initConfig() (bool, error) {
 
 		BoardEnable: false,
 
-		Repo: "https://github.com/slinxlink/node",
+		Repo: "https://github.com/gzjacktang/single-ui",
 	}
 
 	return true, DB.Create(&config).Error
@@ -175,17 +179,31 @@ func patchDefaults() {
 	var config Config
 	DB.First(&config)
 	var configDirty bool
+	if config.SubEnable || config.SubPath != "" || config.SubPort != 0 || config.BoardEnable {
+		DB.Model(&config).Updates(map[string]any{
+			"sub_enable":   false,
+			"sub_path":     "",
+			"sub_port":     0,
+			"board_enable": false,
+		})
+		config.SubEnable = false
+		config.SubPath = ""
+		config.SubPort = 0
+		config.BoardEnable = false
+	}
+	if config.Repo != "https://github.com/gzjacktang/single-ui" {
+		config.Repo = "https://github.com/gzjacktang/single-ui"
+		configDirty = true
+	}
 
 	patchStr(&config.Username, "admin", &configDirty)
 	patchStr(&config.Password, util.GenerateString(12), &configDirty)
 	patchStr(&config.SecretKey, util.GenerateString(32), &configDirty)
 	patchInt(&config.Port, util.GeneratePort(), &configDirty)
 	patchStr(&config.Path, "/"+util.GenerateString(8), &configDirty)
-	patchStr(&config.SubPath, "/link", &configDirty)
-	patchInt(&config.SubPort, 2096, &configDirty)
 	patchStr(&config.LogLevel, "info", &configDirty)
 	patchStr(&config.LogPath, "data/slinx.log", &configDirty)
-	patchStr(&config.Repo, "https://github.com/slinxlink/node", &configDirty)
+	patchStr(&config.Repo, "https://github.com/gzjacktang/single-ui", &configDirty)
 	if configDirty {
 		DB.Save(&config)
 	}
