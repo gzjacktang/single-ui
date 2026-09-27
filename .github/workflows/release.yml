@@ -1,0 +1,110 @@
+name: Publish Linux releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.repository == 'gzjacktang/single-ui'
+    runs-on: ubuntu-24.04
+    env:
+      CORE_VERSION: 1.13.13
+      CORE_TAGS: with_v2ray_api,with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_clash_api
+      GH_REPO: ${{ github.repository }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+
+      - name: Install Linux cross compiler
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
+
+      - name: Build frontend and test panel
+        run: |
+          npm ci --prefix web
+          npm run build --prefix web
+          go test ./...
+
+      - name: Build statically linked panel binaries
+        run: |
+          mkdir -p artifacts
+          for architecture in amd64 arm64; do
+            if [ "$architecture" = arm64 ]; then
+              compiler=aarch64-linux-gnu-gcc
+            else
+              compiler=gcc
+            fi
+            GOOS=linux GOARCH="$architecture" CGO_ENABLED=1 CC="$compiler" \
+              go build -trimpath -buildvcs=false \
+              -ldflags="-s -w -linkmode external -extldflags '-static' -X main.Version=${GITHUB_REF_NAME}" \
+              -o "artifacts/slinx_linux_${architecture}" .
+          done
+
+      - name: Build sing-box core binaries
+        run: |
+          git clone --depth 1 --branch "v${CORE_VERSION}" \
+            https://github.com/SagerNet/sing-box.git "$RUNNER_TEMP/sing-box"
+          for architecture in amd64 arm64; do
+            (
+              cd "$RUNNER_TEMP/sing-box"
+              GOOS=linux GOARCH="$architecture" CGO_ENABLED=0 \
+                go build -trimpath -tags "$CORE_TAGS" \
+                -ldflags="-s -w -X github.com/sagernet/sing-box/constant.Version=${CORE_VERSION}" \
+                -o "$GITHUB_WORKSPACE/artifacts/sing-box_linux_${architecture}" ./cmd/sing-box
+            )
+            gzip -n -9 "artifacts/sing-box_linux_${architecture}"
+          done
+
+      - name: Check release artifacts
+        run: |
+          for architecture in amd64 arm64; do
+            file "artifacts/slinx_linux_${architecture}"
+            if readelf -l "artifacts/slinx_linux_${architecture}" | grep -q INTERP; then
+              echo "Panel binary is dynamically linked: ${architecture}" >&2
+              exit 1
+            fi
+            gzip -t "artifacts/sing-box_linux_${architecture}.gz"
+          done
+          (cd artifacts && sha256sum slinx_linux_* sing-box_linux_*.gz > SHA256SUMS)
+          cat artifacts/SHA256SUMS
+
+      - name: Publish sing-box core release
+        run: |
+          core_tag="sing-box-${CORE_VERSION}"
+          if gh release view "$core_tag" >/dev/null 2>&1; then
+            gh release upload "$core_tag" artifacts/sing-box_linux_*.gz artifacts/SHA256SUMS --clobber
+          else
+            gh release create "$core_tag" artifacts/sing-box_linux_*.gz artifacts/SHA256SUMS \
+              --target "$GITHUB_SHA" --title "sing-box ${CORE_VERSION}" \
+              --notes "Built from SagerNet/sing-box v${CORE_VERSION} with the panel's required build tags." \
+              --latest=false
+          fi
+
+      - name: Publish panel release
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" artifacts/slinx_linux_* artifacts/SHA256SUMS --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" artifacts/slinx_linux_* artifacts/SHA256SUMS \
+              --verify-tag --title "SLINX ${GITHUB_REF_NAME}" \
+              --notes "Linux amd64 and arm64 builds of gzjacktang/single-ui. Includes the panel changes documented in the README." \
+              --latest
+          fi

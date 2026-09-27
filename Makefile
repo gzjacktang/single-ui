@@ -1,4 +1,4 @@
-SINGBOX_VERSION = 1.13.12
+SINGBOX_VERSION = 1.13.13
 SINGBOX_TAGS = with_v2ray_api,with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_clash_api
 SINGBOX_LDFLAGS = -X 'github.com/sagernet/sing-box/constant.Version=$(SINGBOX_VERSION)'
 
