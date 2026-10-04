@@ -16,7 +16,7 @@
       <span class="mono">{{ user.Password }}</span>
       <Copy :value="user.Password" size="sm" />
     </FormRow>
-    <FormRow v-if="inboundTags.some((ib) => ib.protocol === 'shadowsocks')" title="SS2022 密钥">
+    <FormRow v-if="inboundTags.some((ib) => ib.protocol === 'shadowsocks')" title="SS 密钥">
       <span class="mono">{{ user.ShadowsocksKey }}</span>
       <Copy :value="user.ShadowsocksKey" size="sm" />
     </FormRow>

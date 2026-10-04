@@ -46,6 +46,25 @@ func TestShadowsocksInboundRequiresActiveUser(t *testing.T) {
 	}
 }
 
+func TestBuildLegacyShadowsocksMultiUserInbound(t *testing.T) {
+	userKey := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{2}, 32))
+	users := buildUsers("shadowsocks", []database.User{{Enable: true, Name: "alice", ShadowsocksKey: userKey}}, nil, "")
+	for _, method := range []string{"aes-256-gcm", "chacha20-ietf-poly1305", "xchacha20-ietf-poly1305"} {
+		t.Run(method, func(t *testing.T) {
+			got, err := buildInbound(database.Inbound{Protocol: "shadowsocks", Port: 8388, ShadowsocksMethod: method}, users)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.Method != method || got.Password != "" || len(got.Users) != 1 || got.Users[0].Password != userKey {
+				t.Fatalf("unexpected inbound: %#v", got)
+			}
+		})
+	}
+	if _, err := buildInbound(database.Inbound{Protocol: "shadowsocks", Port: 8388, ShadowsocksMethod: "chacha20-poly1305"}, users); err == nil {
+		t.Fatal("unsupported method must be rejected")
+	}
+}
+
 func TestBuildTunnelInbound(t *testing.T) {
 	got, err := buildInbound(database.Inbound{
 		Protocol:      "tunnel",

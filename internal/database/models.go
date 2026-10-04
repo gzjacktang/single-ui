@@ -148,6 +148,8 @@ type Inbound struct {
 	TunnelPort    int    // 目标端口
 	TunnelNetwork string // tcp / udp / tcp,udp
 
+	// Shadowsocks 加密方式；旧数据留空时按 2022 AES-256-GCM 处理
+	ShadowsocksMethod string
 	// Shadowsocks 2022 多用户入站的服务端身份密钥
 	ShadowsocksPassword string
 

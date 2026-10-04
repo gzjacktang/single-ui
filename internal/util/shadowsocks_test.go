@@ -23,3 +23,14 @@ func TestShadowsocks2022Key(t *testing.T) {
 		}
 	}
 }
+
+func TestSupportedShadowsocksMethods(t *testing.T) {
+	for _, method := range []string{"", Shadowsocks2022Method, "aes-256-gcm", "chacha20-ietf-poly1305", "xchacha20-ietf-poly1305"} {
+		if !SupportedShadowsocksMethod(ShadowsocksMethod(method)) {
+			t.Errorf("method %q should be supported", method)
+		}
+	}
+	if SupportedShadowsocksMethod("chacha20-poly1305") {
+		t.Fatal("non-IETF method is not supported by the bundled sing-box core")
+	}
+}

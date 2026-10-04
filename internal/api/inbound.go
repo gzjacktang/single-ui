@@ -58,13 +58,18 @@ func SaveInbound(c *gin.Context) {
 		ib.HopEnabled = false
 	}
 	if ib.Protocol == "shadowsocks" {
+		ib.ShadowsocksMethod = util.ShadowsocksMethod(ib.ShadowsocksMethod)
+		if !util.SupportedShadowsocksMethod(ib.ShadowsocksMethod) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "不支持的 Shadowsocks 加密方式"})
+			return
+		}
 		if ib.ShadowsocksPassword == "" && ib.ID != 0 {
 			var existing database.Inbound
 			if database.DB.First(&existing, ib.ID).Error == nil && existing.Protocol == "shadowsocks" {
 				ib.ShadowsocksPassword = existing.ShadowsocksPassword
 			}
 		}
-		if ib.ShadowsocksPassword == "" {
+		if ib.ShadowsocksMethod == util.Shadowsocks2022Method && ib.ShadowsocksPassword == "" {
 			key, err := util.GenerateShadowsocks2022Key()
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": "生成 Shadowsocks 密钥失败"})
@@ -72,7 +77,7 @@ func SaveInbound(c *gin.Context) {
 			}
 			ib.ShadowsocksPassword = key
 		}
-		if !util.ValidShadowsocks2022Key(ib.ShadowsocksPassword) {
+		if ib.ShadowsocksMethod == util.Shadowsocks2022Method && !util.ValidShadowsocks2022Key(ib.ShadowsocksPassword) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "Shadowsocks 服务端密钥必须是 32 字节 Base64"})
 			return
 		}
@@ -81,6 +86,7 @@ func SaveInbound(c *gin.Context) {
 		ib.HopEnabled = false
 		ib.ObfsType = ""
 	} else {
+		ib.ShadowsocksMethod = ""
 		ib.ShadowsocksPassword = ""
 	}
 

@@ -298,7 +298,11 @@ func buildShadowsocks(ib database.Inbound, users []user) (inbounds, error) {
 	if len(users) == 0 {
 		return inbounds{}, fmt.Errorf("Shadowsocks 入站 %d 没有启用用户", ib.Port)
 	}
-	if !util.ValidShadowsocks2022Key(ib.ShadowsocksPassword) {
+	method := util.ShadowsocksMethod(ib.ShadowsocksMethod)
+	if !util.SupportedShadowsocksMethod(method) {
+		return inbounds{}, fmt.Errorf("Shadowsocks 入站 %d 的加密方式不受支持", ib.Port)
+	}
+	if method == util.Shadowsocks2022Method && !util.ValidShadowsocks2022Key(ib.ShadowsocksPassword) {
 		return inbounds{}, fmt.Errorf("Shadowsocks 入站 %d 的服务端密钥无效", ib.Port)
 	}
 	for _, user := range users {
@@ -307,8 +311,10 @@ func buildShadowsocks(ib database.Inbound, users []user) (inbounds, error) {
 		}
 	}
 	ic := buildBase(ib)
-	ic.Method = util.Shadowsocks2022Method
-	ic.Password = ib.ShadowsocksPassword
+	ic.Method = method
+	if method == util.Shadowsocks2022Method {
+		ic.Password = ib.ShadowsocksPassword
+	}
 	ic.Users = users
 	return ic, nil
 }

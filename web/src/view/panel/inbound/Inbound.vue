@@ -120,6 +120,7 @@ const baseInbound = () => ({
   TunnelAddress: '',
   TunnelPort: 443,
   TunnelNetwork: 'tcp,udp',
+  ShadowsocksMethod: '2022-blake3-aes-256-gcm',
   ShadowsocksPassword: '',
 
   TLSType: 'none',
@@ -218,6 +219,7 @@ function openEdit(ib: any) {
   defaultInbound.value = {
     ...defaultInbound.value,
     ...ib,
+    ShadowsocksMethod: ib.ShadowsocksMethod || '2022-blake3-aes-256-gcm',
     ALPN: ib.ALPN ? ib.ALPN.split(',') : [],
     RealityShortIDs: ib.RealityShortIDs ? JSON.parse(ib.RealityShortIDs) : [],
     Certs: ib.Certs ? JSON.parse(ib.Certs) : [0],

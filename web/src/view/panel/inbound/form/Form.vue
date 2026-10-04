@@ -38,14 +38,22 @@
         <div class="form-row half">
           <span class="form-label">加密方式</span>
           <Select
-            :model-value="'2022-blake3-aes-256-gcm'"
-            :options="[{ label: '2022-blake3-aes-256-gcm', value: '2022-blake3-aes-256-gcm' }]"
-            disabled
+            v-model="form.ShadowsocksMethod"
+            :options="[
+              { label: '2022-blake3-aes-256-gcm', value: '2022-blake3-aes-256-gcm' },
+              { label: 'aes-256-gcm', value: 'aes-256-gcm' },
+              { label: 'chacha20-ietf-poly1305', value: 'chacha20-ietf-poly1305' },
+              { label: 'xchacha20-ietf-poly1305', value: 'xchacha20-ietf-poly1305' },
+            ]"
           />
         </div>
-        <div class="form-row">
+        <div v-if="form.ShadowsocksMethod === '2022-blake3-aes-256-gcm'" class="form-row">
           <span class="form-label">服务端密钥</span>
           <Input v-model="form.ShadowsocksPassword" placeholder="留空则保存时自动生成 32 字节密钥" />
+        </div>
+        <div v-else class="form-row">
+          <span class="form-label">用户密钥</span>
+          <span>使用每位用户的独立 SS 密钥；无需服务端密钥</span>
         </div>
         <div class="form-row">
           <span class="form-label">网络</span>

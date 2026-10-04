@@ -1,6 +1,7 @@
 package sub
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"net"
 	"net/url"
@@ -11,10 +12,17 @@ import (
 )
 
 func shadowsocksPassword(user database.User, inbound database.Inbound) string {
-	if !util.ValidShadowsocks2022Key(inbound.ShadowsocksPassword) || !util.ValidShadowsocks2022Key(user.ShadowsocksKey) {
+	method := util.ShadowsocksMethod(inbound.ShadowsocksMethod)
+	if !util.SupportedShadowsocksMethod(method) || !util.ValidShadowsocks2022Key(user.ShadowsocksKey) {
 		return ""
 	}
-	return inbound.ShadowsocksPassword + ":" + user.ShadowsocksKey
+	if method == util.Shadowsocks2022Method {
+		if !util.ValidShadowsocks2022Key(inbound.ShadowsocksPassword) {
+			return ""
+		}
+		return inbound.ShadowsocksPassword + ":" + user.ShadowsocksKey
+	}
+	return user.ShadowsocksKey
 }
 
 func shadowsocks(user database.User, host string, inbound database.Inbound) string {
@@ -22,9 +30,16 @@ func shadowsocks(user database.User, host string, inbound database.Inbound) stri
 	if password == "" {
 		return ""
 	}
+	method := util.ShadowsocksMethod(inbound.ShadowsocksMethod)
+	var userInfo *url.Userinfo
+	if method == util.Shadowsocks2022Method {
+		userInfo = url.UserPassword(method, password)
+	} else {
+		userInfo = url.User(base64.RawURLEncoding.EncodeToString([]byte(method + ":" + password)))
+	}
 	uri := url.URL{
 		Scheme:   "ss",
-		User:     url.UserPassword(util.Shadowsocks2022Method, password),
+		User:     userInfo,
 		Host:     net.JoinHostPort(host, strconv.Itoa(inbound.Port)),
 		Fragment: inbound.Name,
 	}
@@ -41,7 +56,7 @@ func shadowsocksSingBox(user database.User, host string, inbound database.Inboun
 		"tag":         "proxy",
 		"server":      host,
 		"server_port": inbound.Port,
-		"method":      util.Shadowsocks2022Method,
+		"method":      util.ShadowsocksMethod(inbound.ShadowsocksMethod),
 		"password":    password,
 	}
 	data, _ := json.MarshalIndent(out, "        ", "    ")
