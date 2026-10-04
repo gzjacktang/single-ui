@@ -21,6 +21,7 @@
             { label: 'Trojan', value: 'trojan' },
             { label: 'TUIC', value: 'tuic' },
             { label: 'AnyTLS', value: 'anytls' },
+            { label: 'Shadowsocks', value: 'shadowsocks' },
             { label: 'Tunnel', value: 'tunnel' },
           ]"
         />
@@ -33,6 +34,24 @@
 
     <!-- 传输 -->
     <Section title="传输">
+      <template v-if="form.Protocol === 'shadowsocks'">
+        <div class="form-row half">
+          <span class="form-label">加密方式</span>
+          <Select
+            :model-value="'2022-blake3-aes-256-gcm'"
+            :options="[{ label: '2022-blake3-aes-256-gcm', value: '2022-blake3-aes-256-gcm' }]"
+            disabled
+          />
+        </div>
+        <div class="form-row">
+          <span class="form-label">服务端密钥</span>
+          <Input v-model="form.ShadowsocksPassword" placeholder="留空则保存时自动生成 32 字节密钥" />
+        </div>
+        <div class="form-row">
+          <span class="form-label">网络</span>
+          <span>TCP + UDP；需关联至少一位启用用户才会开放端口</span>
+        </div>
+      </template>
       <template v-if="form.Protocol === 'tunnel'">
         <div class="form-row">
           <span class="form-label">目标地址</span>
@@ -264,7 +283,7 @@
     </Section>
 
     <!-- 安全 -->
-    <Section v-if="form.Protocol !== 'tunnel'" title="安全">
+    <Section v-if="form.Protocol !== 'tunnel' && form.Protocol !== 'shadowsocks'" title="安全">
       <div class="form-row">
         <span class="form-label">安全</span>
         <RadioGroup
@@ -511,7 +530,7 @@ onMounted(async () => {
 watch(
   () => form.value.Protocol,
   (val) => {
-    if (val === 'tunnel') {
+    if (val === 'tunnel' || val === 'shadowsocks') {
       form.value.TLSType = 'none'
       return
     }

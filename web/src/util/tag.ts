@@ -5,6 +5,7 @@ export const protocolMap: Record<string, string> = {
   trojan: 'purple',
   tuic: 'orange',
   anytls: 'yellow',
+  shadowsocks: 'green',
   tunnel: 'red',
 }
 

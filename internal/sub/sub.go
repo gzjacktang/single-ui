@@ -178,6 +178,8 @@ func dispatch(user database.User, inbound database.Inbound, host string) string 
 		return tuic(user.UUID, user.Password, host, inbound)
 	case "anytls":
 		return anytls(user.Password, host, inbound)
+	case "shadowsocks":
+		return shadowsocks(user, host, inbound)
 	default:
 		return ""
 	}
@@ -233,6 +235,8 @@ func dispatchSingBox(user database.User, inbound database.Inbound, host string) 
 		return tuicSingBox(user.UUID, user.Password, host, inbound)
 	case "anytls":
 		return anytlsSingBox(user.Password, host, inbound)
+	case "shadowsocks":
+		return shadowsocksSingBox(user, host, inbound)
 	default:
 		return ""
 	}

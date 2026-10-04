@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/slinxlink/node/internal/database"
+	"github.com/slinxlink/node/internal/util"
 )
 
 // ── sing-box config structs ──────────────────────────────────────────────────
@@ -64,6 +65,8 @@ type inbounds struct {
 	Heartbeat         string      `json:"heartbeat,omitempty"`
 	TLS               *tls        `json:"tls,omitempty"`
 	Users             []user      `json:"users,omitempty"`
+	Method            string      `json:"method,omitempty"`
+	Password          string      `json:"password,omitempty"`
 	Network           string      `json:"network,omitempty"`
 	OverrideAddress   string      `json:"override_address,omitempty"`
 	OverridePort      int         `json:"override_port,omitempty"`
@@ -283,10 +286,31 @@ func buildInbound(ib database.Inbound, users []user) (inbounds, error) {
 		return buildTuic(ib, users)
 	case "anytls":
 		return buildAnytls(ib, users)
+	case "shadowsocks":
+		return buildShadowsocks(ib, users)
 	case "tunnel":
 		return buildTunnel(ib)
 	}
 	return inbounds{}, fmt.Errorf("unsupported protocol: %s", ib.Protocol)
+}
+
+func buildShadowsocks(ib database.Inbound, users []user) (inbounds, error) {
+	if len(users) == 0 {
+		return inbounds{}, fmt.Errorf("Shadowsocks 入站 %d 没有启用用户", ib.Port)
+	}
+	if !util.ValidShadowsocks2022Key(ib.ShadowsocksPassword) {
+		return inbounds{}, fmt.Errorf("Shadowsocks 入站 %d 的服务端密钥无效", ib.Port)
+	}
+	for _, user := range users {
+		if !util.ValidShadowsocks2022Key(user.Password) {
+			return inbounds{}, fmt.Errorf("Shadowsocks 入站 %d 的用户 %s 密钥无效", ib.Port, user.Name)
+		}
+	}
+	ic := buildBase(ib)
+	ic.Method = util.Shadowsocks2022Method
+	ic.Password = ib.ShadowsocksPassword
+	ic.Users = users
+	return ic, nil
 }
 
 func buildTunnel(ib database.Inbound) (inbounds, error) {
@@ -500,7 +524,11 @@ func buildUsers(protocol string, users []database.User, boardUsers []database.Bo
 		if !u.Enable {
 			continue
 		}
-		result = append(result, buildUser(protocol, u.Name, u.UUID, u.Password, flow))
+		password := u.Password
+		if protocol == "shadowsocks" {
+			password = u.ShadowsocksKey
+		}
+		result = append(result, buildUser(protocol, u.Name, u.UUID, password, flow))
 	}
 	for _, u := range boardUsers {
 		result = append(result, buildUser(protocol, fmt.Sprintf("BoardUser_%d", u.UserID), u.UUID, u.Passwd, flow))
@@ -516,7 +544,7 @@ func buildUser(protocol, name, uuid, password, flow string) user {
 	case "vless":
 		u.UUID = uuid
 		u.Flow = flow
-	case "hysteria", "trojan", "anytls":
+	case "hysteria", "trojan", "anytls", "shadowsocks":
 		u.Password = password
 	case "tuic":
 		u.UUID = uuid

@@ -1,11 +1,50 @@
 package core
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"testing"
 
 	"github.com/slinxlink/node/internal/database"
+	"github.com/slinxlink/node/internal/util"
 )
+
+func TestBuildShadowsocks2022MultiUserInbound(t *testing.T) {
+	serverKey := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32))
+	userKey := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{2}, 32))
+	users := buildUsers("shadowsocks", []database.User{{Enable: true, Name: "alice", Password: "other-protocol-password", ShadowsocksKey: userKey}}, nil, "")
+	got, err := buildInbound(database.Inbound{Protocol: "shadowsocks", Port: 8388, ShadowsocksPassword: serverKey}, users)
+	if err != nil {
+		t.Fatalf("buildInbound: %v", err)
+	}
+	data, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var config map[string]any
+	if err := json.Unmarshal(data, &config); err != nil {
+		t.Fatal(err)
+	}
+	if config["type"] != "shadowsocks" || config["method"] != util.Shadowsocks2022Method || config["password"] != serverKey {
+		t.Fatalf("unexpected Shadowsocks config: %s", data)
+	}
+	configUsers, ok := config["users"].([]any)
+	if !ok || len(configUsers) != 1 || configUsers[0].(map[string]any)["password"] != userKey {
+		t.Fatalf("unexpected Shadowsocks users: %s", data)
+	}
+	if _, ok := config["tls"]; ok {
+		t.Fatalf("Shadowsocks must not inherit TLS settings: %s", data)
+	}
+}
+
+func TestShadowsocksInboundRequiresActiveUser(t *testing.T) {
+	serverKey := base64.StdEncoding.EncodeToString(bytes.Repeat([]byte{1}, 32))
+	users := buildUsers("shadowsocks", []database.User{{Enable: false, Name: "alice", ShadowsocksKey: serverKey}}, nil, "")
+	if _, err := buildInbound(database.Inbound{Protocol: "shadowsocks", Port: 8388, ShadowsocksPassword: serverKey}, users); err == nil {
+		t.Fatal("disabled last user must not leave a single-user Shadowsocks listener")
+	}
+}
 
 func TestBuildTunnelInbound(t *testing.T) {
 	got, err := buildInbound(database.Inbound{

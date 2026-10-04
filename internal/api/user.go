@@ -34,6 +34,26 @@ func SaveUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "token 已存在"})
 		return
 	}
+	if u.ID != 0 && u.ShadowsocksKey == "" {
+		var existing database.User
+		if database.DB.First(&existing, u.ID).Error != nil {
+			c.JSON(http.StatusNotFound, gin.H{"error": "用户不存在"})
+			return
+		}
+		u.ShadowsocksKey = existing.ShadowsocksKey
+	}
+	if u.ShadowsocksKey == "" {
+		key, err := util.GenerateShadowsocks2022Key()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "生成 Shadowsocks 用户密钥失败"})
+			return
+		}
+		u.ShadowsocksKey = key
+	}
+	if !util.ValidShadowsocks2022Key(u.ShadowsocksKey) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Shadowsocks 用户密钥必须是 32 字节 Base64"})
+		return
+	}
 
 	if u.ID == 0 {
 		database.DB.Create(&u)

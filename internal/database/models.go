@@ -100,7 +100,7 @@ type Inbound struct {
 	ID        uint `gorm:"primarykey"`
 	Enable    bool
 	Name      string // 备注名
-	Protocol  string // vless / vmess / hysteria / trojan / tuic / anytls / tunnel
+	Protocol  string // vless / vmess / hysteria / trojan / tuic / anytls / shadowsocks / tunnel
 	Port      int    // 监听端口
 	CreatedAt time.Time
 	UpdatedAt time.Time
@@ -148,6 +148,9 @@ type Inbound struct {
 	TunnelPort    int    // 目标端口
 	TunnelNetwork string // tcp / udp / tcp,udp
 
+	// Shadowsocks 2022 多用户入站的服务端身份密钥
+	ShadowsocksPassword string
+
 	// 通用 TLS
 	TLSType       string // none / TLS / Reality
 	ServerName    string // 域名
@@ -176,16 +179,17 @@ type Inbound struct {
 func (Inbound) TableName() string { return "inbound" }
 
 type User struct {
-	ID        uint `gorm:"primarykey"`
-	Enable    bool
-	Name      string // 备注名
-	Token     string `gorm:"unique"` // 订阅 token
-	Inbounds  string // JSON 数组 [1, 3, 5]，绑定的入站 ID
-	UUID      string // VLESS / VMess 用
-	Password  string // Hysteria 用
-	ExpireAt  time.Time
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID             uint `gorm:"primarykey"`
+	Enable         bool
+	Name           string // 备注名
+	Token          string `gorm:"unique"` // 订阅 token
+	Inbounds       string // JSON 数组 [1, 3, 5]，绑定的入站 ID
+	UUID           string // VLESS / VMess 用
+	Password       string // Hysteria 用
+	ShadowsocksKey string // Shadowsocks 2022 用户密钥（32 字节 base64）
+	ExpireAt       time.Time
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
 }
 
 func (User) TableName() string { return "user" }

@@ -69,7 +69,7 @@ SLINX node 是一个基于 sing-box 核心的轻量节点管理面板，专注�
 
 ## 功能
 
-- 🚀 基于 sing-box 核心，支持 VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS 和 Tunnel 转发
+- 🚀 基于 sing-box 核心，支持 VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS、Shadowsocks 2022 和 Tunnel 转发
 - 🎯 Reality SNI 目标扫描与可用性检查，支持域名、IP 和 CIDR 网段，自动过滤内网地址并从证书发现可用 SNI
 - 📜 证书管理，支持 Let's Encrypt、ZeroSSL，DNS/HTTP 验证和自动续签
 - 👥 多用户管理，单节点链接可复制或使用二维码分享
@@ -105,9 +105,9 @@ SLINX node 专为普通自建节点用户设计，化繁为简，让搭建节点
 
 ## 协议
 
-当前支持：VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS、Tunnel（TCP/UDP 转发）、WireGuard（出站）
+当前支持：VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS、Shadowsocks 2022（AES-256-GCM，多用户）、Tunnel（TCP/UDP 转发）、WireGuard（出站）。Shadowsocks 入站需关联至少一位启用用户；每位用户使用独立的 32 字节密钥，可复制 `ss://` 链接或二维码分享。客户端需支持 Shadowsocks 2022。
 
-计划支持：Shadowsocks、ShadowTLS
+计划支持：ShadowTLS
 
 ## 多语言支持
 

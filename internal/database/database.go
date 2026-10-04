@@ -52,6 +52,9 @@ func Init() (bool, error) {
 	); err != nil {
 		return false, err
 	}
+	if err = backfillShadowsocksKeys(); err != nil {
+		return false, err
+	}
 
 	createIndexes()
 	initCore()
@@ -68,6 +71,25 @@ func Init() (bool, error) {
 	}
 
 	return isFirstRun, nil
+}
+
+func backfillShadowsocksKeys() error {
+	var users []User
+	if err := DB.Where("shadowsocks_key = '' OR shadowsocks_key IS NULL").Find(&users).Error; err != nil {
+		return err
+	}
+	return DB.Transaction(func(tx *gorm.DB) error {
+		for _, user := range users {
+			key, err := util.GenerateShadowsocks2022Key()
+			if err != nil {
+				return err
+			}
+			if err := tx.Model(&user).UpdateColumn("shadowsocks_key", key).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }
 
 func createIndexes() {

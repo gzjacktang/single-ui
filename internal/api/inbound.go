@@ -35,7 +35,7 @@ func SaveInbound(c *gin.Context) {
 		return
 	}
 
-	supported := map[string]bool{"vless": true, "vmess": true, "hysteria": true, "trojan": true, "tuic": true, "anytls": true, "tunnel": true}
+	supported := map[string]bool{"vless": true, "vmess": true, "hysteria": true, "trojan": true, "tuic": true, "anytls": true, "shadowsocks": true, "tunnel": true}
 	if !supported[ib.Protocol] {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "不支持的入站协议"})
 		return
@@ -56,6 +56,32 @@ func SaveInbound(c *gin.Context) {
 		}
 		ib.TLSType = "none"
 		ib.HopEnabled = false
+	}
+	if ib.Protocol == "shadowsocks" {
+		if ib.ShadowsocksPassword == "" && ib.ID != 0 {
+			var existing database.Inbound
+			if database.DB.First(&existing, ib.ID).Error == nil && existing.Protocol == "shadowsocks" {
+				ib.ShadowsocksPassword = existing.ShadowsocksPassword
+			}
+		}
+		if ib.ShadowsocksPassword == "" {
+			key, err := util.GenerateShadowsocks2022Key()
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "生成 Shadowsocks 密钥失败"})
+				return
+			}
+			ib.ShadowsocksPassword = key
+		}
+		if !util.ValidShadowsocks2022Key(ib.ShadowsocksPassword) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Shadowsocks 服务端密钥必须是 32 字节 Base64"})
+			return
+		}
+		ib.TLSType = "none"
+		ib.Transport = "raw"
+		ib.HopEnabled = false
+		ib.ObfsType = ""
+	} else {
+		ib.ShadowsocksPassword = ""
 	}
 
 	if ib.ObfsType != "" {

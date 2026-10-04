@@ -16,6 +16,10 @@
       <span class="mono">{{ user.Password }}</span>
       <Copy :value="user.Password" size="sm" />
     </FormRow>
+    <FormRow v-if="inboundTags.some((ib) => ib.protocol === 'shadowsocks')" title="SS2022 密钥">
+      <span class="mono">{{ user.ShadowsocksKey }}</span>
+      <Copy :value="user.ShadowsocksKey" size="sm" />
+    </FormRow>
     <FormRow title="创建时间">
       <span>{{ formatTime(user.CreatedAt) }}</span>
     </FormRow>

@@ -19,6 +19,8 @@
                   {{
                     ib.Protocol === 'tunnel'
                       ? formatTunnelNetwork(ib.TunnelNetwork)
+                      : ib.Protocol === 'shadowsocks'
+                        ? 'TCP+UDP'
                       : ib.Protocol === 'hysteria' || ib.Protocol === 'tuic'
                         ? 'UDP'
                         : ib.Transport === 'websocket'
@@ -118,6 +120,7 @@ const baseInbound = () => ({
   TunnelAddress: '',
   TunnelPort: 443,
   TunnelNetwork: 'tcp,udp',
+  ShadowsocksPassword: '',
 
   TLSType: 'none',
   ServerName: '',
