@@ -54,16 +54,7 @@ func StartWeb() error {
 				c.Status(500)
 				return
 			}
-			encodedPath, _ := json.Marshal(panelPath)
-			html := strings.Replace(
-				string(data),
-				"</head>",
-				fmt.Sprintf(`<script>window.__PANEL_PATH__=%s</script></head>`, encodedPath),
-				1,
-			)
-			html = strings.ReplaceAll(html, `"/assets/`, `"`+panelPath+`/assets/`)
-			html = strings.ReplaceAll(html, `"/favicon.ico`, `"`+panelPath+`/favicon.ico`)
-			c.Data(200, "text/html; charset=utf-8", []byte(html))
+			c.Data(200, "text/html; charset=utf-8", panelIndexHTML(data, panelPath))
 			return
 		}
 
@@ -71,6 +62,22 @@ func StartWeb() error {
 	})
 
 	return runEngine(r, config.Domain, config.Port)
+}
+
+func panelIndexHTML(data []byte, panelPath string) []byte {
+	encodedPath, _ := json.Marshal(panelPath)
+	html := strings.Replace(
+		string(data),
+		"</head>",
+		fmt.Sprintf(`<script>window.__PANEL_PATH__=%s</script></head>`, encodedPath),
+		1,
+	)
+	return []byte(strings.NewReplacer(
+		`"/assets/`, `"`+panelPath+`/assets/`,
+		`"./assets/`, `"`+panelPath+`/assets/`,
+		`"/favicon.ico`, `"`+panelPath+`/favicon.ico`,
+		`"./favicon.ico`, `"`+panelPath+`/favicon.ico`,
+	).Replace(html))
 }
 
 func panelAssetsHandler(dist fs.FS, panelPath string) http.Handler {

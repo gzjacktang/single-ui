@@ -42,3 +42,17 @@ func TestPanelAssetsHandlerSupportsNestedPanelPath(t *testing.T) {
 		t.Fatalf("root asset status = %d, want 404", response.Code)
 	}
 }
+
+func TestPanelIndexHTMLSupportsRelativeAssets(t *testing.T) {
+	html := []byte(`<head><script src="./assets/main.js"></script><link href="./assets/main.css" rel="stylesheet"><link rel="icon" href="./favicon.ico"></head>`)
+	got := string(panelIndexHTML(html, "/private/admin/panel"))
+	for _, asset := range []string{
+		`src="/private/admin/panel/assets/main.js"`,
+		`href="/private/admin/panel/assets/main.css"`,
+		`href="/private/admin/panel/favicon.ico"`,
+	} {
+		if !strings.Contains(got, asset) {
+			t.Fatalf("index missing %s: %s", asset, got)
+		}
+	}
+}

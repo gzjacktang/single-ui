@@ -58,7 +58,17 @@ jobs:
               -o "artifacts/slinx_linux_${architecture}" .
           done
 
+      - name: Check for existing sing-box core release
+        id: core
+        run: |
+          if gh release view "sing-box-${CORE_VERSION}" >/dev/null 2>&1; then
+            echo 'publish=false' >> "$GITHUB_OUTPUT"
+          else
+            echo 'publish=true' >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build sing-box core binaries
+        if: steps.core.outputs.publish == 'true'
         run: |
           git clone --depth 1 --branch "v${CORE_VERSION}" \
             https://github.com/SagerNet/sing-box.git "$RUNNER_TEMP/sing-box"
@@ -81,22 +91,23 @@ jobs:
               echo "Panel binary is dynamically linked: ${architecture}" >&2
               exit 1
             fi
-            gzip -t "artifacts/sing-box_linux_${architecture}.gz"
           done
-          (cd artifacts && sha256sum slinx_linux_* sing-box_linux_*.gz > SHA256SUMS)
+          (cd artifacts && sha256sum slinx_linux_* > SHA256SUMS)
+          if [ "${{ steps.core.outputs.publish }}" = true ]; then
+            for architecture in amd64 arm64; do
+              gzip -t "artifacts/sing-box_linux_${architecture}.gz"
+            done
+            (cd artifacts && sha256sum sing-box_linux_*.gz >> SHA256SUMS)
+          fi
           cat artifacts/SHA256SUMS
 
       - name: Publish sing-box core release
+        if: steps.core.outputs.publish == 'true'
         run: |
-          core_tag="sing-box-${CORE_VERSION}"
-          if gh release view "$core_tag" >/dev/null 2>&1; then
-            gh release upload "$core_tag" artifacts/sing-box_linux_*.gz artifacts/SHA256SUMS --clobber
-          else
-            gh release create "$core_tag" artifacts/sing-box_linux_*.gz artifacts/SHA256SUMS \
-              --target "$GITHUB_SHA" --title "sing-box ${CORE_VERSION}" \
-              --notes "Built from SagerNet/sing-box v${CORE_VERSION} with the panel's required build tags." \
-              --latest=false
-          fi
+          gh release create "sing-box-${CORE_VERSION}" artifacts/sing-box_linux_*.gz artifacts/SHA256SUMS \
+            --target "$GITHUB_SHA" --title "sing-box ${CORE_VERSION}" \
+            --notes "Built from SagerNet/sing-box v${CORE_VERSION} with the panel's required build tags." \
+            --latest=false
 
       - name: Publish panel release
         run: |

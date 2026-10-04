@@ -5,6 +5,7 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 import AutoImport from 'unplugin-auto-import/vite'
 
 export default defineConfig(({ mode }) => ({
+  base: './',
   plugins: [
     vue(),
     vueDevTools(),
