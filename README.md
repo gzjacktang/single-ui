@@ -27,6 +27,27 @@ bash <(curl -sL https://raw.githubusercontent.com/gzjacktang/single-ui/main/inst
 
 安装完成后，使用 `slinx` 进入终端管理菜单。面板端口只在安装阶段设置，面板设置页面不会提供端口修改项。
 
+### 旧版终端更新失败时
+
+v0.0.7 的终端“更新”会尝试直接写入正在运行的程序文件。若显示“下载失败”，请在 VPS 的 root 终端执行一次手动更新；已有面板数据库和证书不会被重置：
+
+```bash
+arch=$(uname -m)
+case "$arch" in
+  x86_64) arch=amd64 ;;
+  aarch64) arch=arm64 ;;
+  *) echo "不支持的架构: $arch"; exit 1 ;;
+esac
+tmp=$(mktemp /etc/slinx/.slinx-update.XXXXXX) || exit 1
+if ! curl -fL --retry 3 -o "$tmp" "https://github.com/gzjacktang/single-ui/releases/latest/download/slinx_linux_${arch}"; then
+  rm -f "$tmp"
+  exit 1
+fi
+test -s "$tmp" && chmod 755 "$tmp" && mv "$tmp" /etc/slinx/slinx && systemctl restart slinx
+```
+
+如果 `curl` 也失败，请先检查 VPS 到 GitHub Release 下载地址的连通性，并保留 `curl` 输出以便定位；下载失败不会替换现有程序。
+
 ### 手动初始化
 
 安装脚本会调用内置的 `setup` 命令。需要手动初始化时，可以使用：

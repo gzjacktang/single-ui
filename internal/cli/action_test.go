@@ -1,0 +1,81 @@
+package cli
+
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+func TestUpdateDownloadsBeforeReplacingRunningBinary(t *testing.T) {
+	tempDir := t.TempDir()
+	oldDir, oldVersion := dir, Version
+	dir, Version = tempDir, "v0.0.7"
+	t.Cleanup(func() { dir, Version = oldDir, oldVersion })
+	t.Setenv("SLINX_TEST_DIR", tempDir)
+	t.Setenv("PATH", tempDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	oldBinary := filepath.Join(tempDir, "slinx")
+	if err := os.WriteFile(oldBinary, []byte("old-binary"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	commands := map[string]string{
+		"curl":      "#!/bin/sh\nprintf '{\\n  \"tag_name\": \"v0.0.8\"\\n}\\n'\n",
+		"uname":     "#!/bin/sh\nprintf 'x86_64\\n'\n",
+		"wget":      "#!/bin/sh\nif [ \"$3\" = \"$SLINX_TEST_DIR/slinx\" ]; then exit 26; fi\nprintf 'new-binary' > \"$3\"\n",
+		"systemctl": "#!/bin/sh\nexit 0\n",
+	}
+	for name, script := range commands {
+		if err := os.WriteFile(filepath.Join(tempDir, name), []byte(script), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	message := string(update()()().(updateResultMsg))
+	if !strings.Contains(message, "更新成功") {
+		t.Fatalf("update result = %q, want success", message)
+	}
+	data, err := os.ReadFile(oldBinary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "new-binary" {
+		t.Fatalf("binary = %q, want downloaded binary", data)
+	}
+}
+
+func TestUpdateFailedDownloadKeepsExistingBinary(t *testing.T) {
+	tempDir := t.TempDir()
+	oldDir, oldVersion := dir, Version
+	dir, Version = tempDir, "v0.0.7"
+	t.Cleanup(func() { dir, Version = oldDir, oldVersion })
+	t.Setenv("PATH", tempDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	oldBinary := filepath.Join(tempDir, "slinx")
+	if err := os.WriteFile(oldBinary, []byte("old-binary"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	commands := map[string]string{
+		"curl":  "#!/bin/sh\nprintf '{\\n  \"tag_name\": \"v0.0.8\"\\n}\\n'\n",
+		"uname": "#!/bin/sh\nprintf 'x86_64\\n'\n",
+		"wget":  "#!/bin/sh\nexit 8\n",
+	}
+	for name, script := range commands {
+		if err := os.WriteFile(filepath.Join(tempDir, name), []byte(script), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	message := string(update()()().(updateResultMsg))
+	if !strings.Contains(message, "下载失败") {
+		t.Fatalf("update result = %q, want download failure", message)
+	}
+	data, err := os.ReadFile(oldBinary)
+	if err != nil || string(data) != "old-binary" {
+		t.Fatalf("existing binary changed after failed download: %q, %v", data, err)
+	}
+	leftovers, err := filepath.Glob(filepath.Join(tempDir, ".slinx-update-*"))
+	if err != nil || len(leftovers) != 0 {
+		t.Fatalf("temporary files left behind: %v, %v", leftovers, err)
+	}
+}

@@ -205,12 +205,30 @@ func update() func() tea.Cmd {
 			}
 
 			url := fmt.Sprintf("%s/latest/download/slinx_linux_%s", releasesURL, arch)
-			if err := exec.Command("wget", "-q", "-O", filepath.Join(dir, "slinx"), url).Run(); err != nil {
-				return updateResultMsg(renderStatus("更新", "下载失败", false))
+			tempFile, err := os.CreateTemp(dir, ".slinx-update-*")
+			if err != nil {
+				return updateResultMsg(renderStatus("更新", "创建临时文件失败: "+err.Error(), false))
 			}
+			tempPath := tempFile.Name()
+			tempFile.Close()
+			defer os.Remove(tempPath)
 
-			runCmd("chmod", "+x", filepath.Join(dir, "slinx"))
-			runCmd("systemctl", "restart", "slinx")
+			if err := exec.Command("wget", "-q", "-O", tempPath, url).Run(); err != nil {
+				return updateResultMsg(renderStatus("更新", "下载失败: "+err.Error(), false))
+			}
+			info, err := os.Stat(tempPath)
+			if err != nil || info.Size() == 0 {
+				return updateResultMsg(renderStatus("更新", "下载文件为空", false))
+			}
+			if err := os.Chmod(tempPath, 0755); err != nil {
+				return updateResultMsg(renderStatus("更新", "设置权限失败: "+err.Error(), false))
+			}
+			if err := os.Rename(tempPath, filepath.Join(dir, "slinx")); err != nil {
+				return updateResultMsg(renderStatus("更新", "替换程序失败: "+err.Error(), false))
+			}
+			if err := exec.Command("systemctl", "restart", "slinx").Run(); err != nil {
+				return updateResultMsg(renderStatus("更新", "重启失败: "+err.Error(), false))
+			}
 			return updateResultMsg(renderStatus("更新", "更新成功", true))
 		}
 	}
