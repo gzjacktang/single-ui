@@ -79,3 +79,20 @@ func TestUpdateFailedDownloadKeepsExistingBinary(t *testing.T) {
 		t.Fatalf("temporary files left behind: %v, %v", leftovers, err)
 	}
 }
+
+func TestRemoveManagementCommands(t *testing.T) {
+	dir := t.TempDir()
+	for _, name := range []string{"slinx", "sbox"} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte("command"), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := removeManagementCommands(dir); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"slinx", "sbox"} {
+		if _, err := os.Lstat(filepath.Join(dir, name)); !os.IsNotExist(err) {
+			t.Fatalf("%s still exists: %v", name, err)
+		}
+	}
+}

@@ -196,11 +196,6 @@ StartLimitBurst=3
 WantedBy=multi-user.target
 EOF
 
-step "启动服务"
-systemctl daemon-reload
-systemctl enable slinx.service
-systemctl start slinx.service
-
 step "注册 SBOX 管理命令"
 cat <<EOF > /usr/local/bin/sbox
 #!/bin/bash
@@ -214,6 +209,11 @@ cat <<EOF > /usr/local/bin/slinx
 /etc/slinx/slinx cli
 EOF
 chmod +x /usr/local/bin/slinx
+
+step "启动服务"
+systemctl daemon-reload
+systemctl enable slinx.service
+systemctl start slinx.service
 
 echo ""
 echo -e "${PINK}>>> 安装完成${PLAIN}"

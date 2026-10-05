@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/gzjacktang/single-ui/internal/cli"
@@ -27,6 +29,11 @@ func Start() {
 
 	// ── 3. 初始化日志 ────────────────────────────────────────────────────────
 	util.InitLog(config.LogPath, config.LogLevel, config.LogEnable)
+	if executable, err := os.Executable(); err == nil && filepath.Clean(executable) == "/etc/slinx/slinx" {
+		if err := util.EnsureSboxCommand("/usr/local/bin"); err != nil {
+			util.Error("[bootstrap] 注册 sbox 管理命令失败: %v", err)
+		}
+	}
 
 	// ── 4. 初始化核心 ────────────────────────────────────────────────────────
 	core.Default.Init()

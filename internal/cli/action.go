@@ -239,12 +239,23 @@ func uninstall() string {
 	runCmd("systemctl", "disable", "slinx")
 	runCmd("rm", "-f", "/etc/systemd/system/slinx.service")
 	runCmd("rm", "-rf", dir)
-	runCmd("rm", "-f", "/usr/local/bin/slinx")
+	if err := removeManagementCommands("/usr/local/bin"); err != nil {
+		return renderStatus("卸载", "删除管理命令失败: "+err.Error(), false)
+	}
 	runCmd("systemctl", "daemon-reload")
 	time.Sleep(5 * time.Second)
 	return renderStatus("卸载", "卸载成功", true) + "\n" + renderInfo("提示",
 		[]string{"", "5秒后自动退出脚本"},
 	)
+}
+
+func removeManagementCommands(commandDir string) error {
+	for _, name := range []string{"slinx", "sbox"} {
+		if err := os.Remove(filepath.Join(commandDir, name)); err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+	return nil
 }
 
 func firstRun() string {

@@ -74,6 +74,7 @@ func RegisterRoutes(r *gin.Engine, panelPath string) {
 
 		// 日志
 		private.GET("/log/sbox", SboxLog)
+		private.GET("/log/slinx", SboxLog) // 兼容升级期间仍打开的旧版前端
 		private.GET("/log/core", CoreLog)
 
 		// WARP
