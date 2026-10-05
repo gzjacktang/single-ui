@@ -56,6 +56,7 @@ jobs:
               go build -trimpath -buildvcs=false \
               -ldflags="-s -w -linkmode external -extldflags '-static' -X main.Version=${GITHUB_REF_NAME}" \
               -o "artifacts/slinx_linux_${architecture}" .
+            cp "artifacts/slinx_linux_${architecture}" "artifacts/sbox_linux_${architecture}"
           done
 
       - name: Check for existing sing-box core release
@@ -87,12 +88,13 @@ jobs:
         run: |
           for architecture in amd64 arm64; do
             file "artifacts/slinx_linux_${architecture}"
+            file "artifacts/sbox_linux_${architecture}"
             if readelf -l "artifacts/slinx_linux_${architecture}" | grep -q INTERP; then
               echo "Panel binary is dynamically linked: ${architecture}" >&2
               exit 1
             fi
           done
-          (cd artifacts && sha256sum slinx_linux_* > SHA256SUMS)
+          (cd artifacts && sha256sum sbox_linux_* slinx_linux_* > SHA256SUMS)
           if [ "${{ steps.core.outputs.publish }}" = true ]; then
             for architecture in amd64 arm64; do
               gzip -t "artifacts/sing-box_linux_${architecture}.gz"
@@ -112,10 +114,10 @@ jobs:
       - name: Publish panel release
         run: |
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" artifacts/slinx_linux_* artifacts/SHA256SUMS --clobber
+            gh release upload "$GITHUB_REF_NAME" artifacts/sbox_linux_* artifacts/slinx_linux_* artifacts/SHA256SUMS --clobber
           else
-            gh release create "$GITHUB_REF_NAME" artifacts/slinx_linux_* artifacts/SHA256SUMS \
-              --verify-tag --title "SLINX ${GITHUB_REF_NAME}" \
-              --notes "Linux amd64 and arm64 builds of gzjacktang/single-ui. Includes the panel changes documented in the README." \
+            gh release create "$GITHUB_REF_NAME" artifacts/sbox_linux_* artifacts/slinx_linux_* artifacts/SHA256SUMS \
+              --verify-tag --title "SBOX ${GITHUB_REF_NAME}" \
+              --notes "SBOX panel for Linux amd64 and arm64. Rebranded panel and management command, with a new logo; removed built-in BBR and IP/unlock/back-route detection. Legacy binary filenames remain available for existing installations." \
               --latest
           fi
