@@ -406,6 +406,10 @@
       </template>
 
       <template v-if="form.TLSType === 'reality'">
+        <div v-if="form.Protocol === 'anytls'" class="form-row">
+          <span class="form-label">客户端</span>
+          <span>AnyTLS + Reality 请使用支持该组合的客户端（如 sing-box）；Mihomo 不支持</span>
+        </div>
         <div class="form-row">
           <span class="form-label">SNI</span>
           <RefreshBtn @click="genTarget">
@@ -462,7 +466,7 @@
           <span class="form-label"></span>
           <button class="action-btn" @click="genKeyPair">生成密钥对</button>
         </div>
-        <div class="form-row half">
+        <div v-if="form.Protocol === 'vless'" class="form-row half">
           <span class="form-label">Flow</span>
           <Select
             v-model="form.Flow"

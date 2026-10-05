@@ -107,6 +107,8 @@ SLINX node 专为普通自建节点用户设计，化繁为简，让搭建节点
 
 当前支持：VLESS、VMess、Hysteria2、Trojan、TUIC、AnyTLS、Shadowsocks、Tunnel（TCP/UDP 转发）、WireGuard（出站）。Shadowsocks 可选 `2022-blake3-aes-256-gcm`、`aes-256-gcm`、`chacha20-ietf-poly1305`、`xchacha20-ietf-poly1305`；不支持 `chacha20-poly1305` 这个非 IETF 名称。入站需关联至少一位启用用户；每位用户使用独立的 32 字节随机密钥，可复制 `ss://` 链接或二维码分享。2022 模式另外需要服务端身份密钥，并要求客户端支持 Shadowsocks 2022。
 
+AnyTLS 可使用 TLS 或 Reality，但不支持 VLESS 专用的 Vision Flow。AnyTLS + Reality 需要支持该组合的客户端（如 sing-box）；Mihomo 不支持。AnyTLS 分享链接中的 Reality 参数属于客户端扩展，并非 AnyTLS 基础 URI 规范的一部分，导入前请确认客户端能识别公钥和短 ID。
+
 计划支持：ShadowTLS
 
 ## 多语言支持

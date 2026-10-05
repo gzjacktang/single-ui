@@ -65,6 +65,28 @@ func TestBuildLegacyShadowsocksMultiUserInbound(t *testing.T) {
 	}
 }
 
+func TestAnyTLSRealityIgnoresPreviousTLSFields(t *testing.T) {
+	got, err := buildInbound(database.Inbound{
+		Protocol:          "anytls",
+		Port:              443,
+		TLSType:           "reality",
+		ServerName:        "old.example.com",
+		Certs:             "[1]",
+		ALPN:              "h2",
+		RealityServerName: "new.example.com",
+		RealityServer:     "new.example.com",
+		RealityServerPort: 443,
+		RealityPrivateKey: "test-private-key",
+		RealityShortIDs:   `["1234abcd"]`,
+	}, []user{{Name: "alice", Password: "test-password"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.TLS == nil || got.TLS.ServerName != "new.example.com" || got.TLS.Reality == nil || got.TLS.CertificatePath != "" || len(got.TLS.ALPN) != 0 {
+		t.Fatalf("Reality server TLS contains certificate settings: %#v", got.TLS)
+	}
+}
+
 func TestBuildTunnelInbound(t *testing.T) {
 	got, err := buildInbound(database.Inbound{
 		Protocol:      "tunnel",

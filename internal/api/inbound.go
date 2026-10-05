@@ -89,6 +89,7 @@ func SaveInbound(c *gin.Context) {
 		ib.ShadowsocksMethod = ""
 		ib.ShadowsocksPassword = ""
 	}
+	normalizeInboundSecurity(&ib)
 
 	if ib.ObfsType != "" {
 		if ib.ObfsPassword == "" {
@@ -149,6 +150,10 @@ func SaveInbound(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "请填写私钥"})
 			return
 		}
+		if ib.RealityPublicKey == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "请填写公钥"})
+			return
+		}
 		if ib.RealityShortIDs == "" || ib.RealityShortIDs == "[]" {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "请填写短 ID"})
 			return
@@ -183,6 +188,24 @@ func SaveInbound(c *gin.Context) {
 
 	go core.Default.Apply()
 	c.JSON(http.StatusOK, ib)
+}
+
+func normalizeInboundSecurity(ib *database.Inbound) {
+	if ib.TLSType != "tls" {
+		ib.ServerName = ""
+		ib.CipherSuites = ""
+		ib.TLSMinVersion = ""
+		ib.TLSMaxVersion = ""
+		ib.Insecure = false
+		ib.ALPN = ""
+		ib.Certs = ""
+		ib.ECHEnabled = false
+		ib.ECHKey = ""
+		ib.ECHConfig = ""
+	}
+	if ib.Protocol != "vless" {
+		ib.Flow = ""
+	}
 }
 
 func DeleteInbound(c *gin.Context) {

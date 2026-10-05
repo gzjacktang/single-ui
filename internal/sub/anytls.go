@@ -3,6 +3,7 @@ package sub
 import (
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/url"
 	"strconv"
 	"strings"
@@ -11,20 +12,29 @@ import (
 )
 
 func anytls(password string, host string, inbound database.Inbound) string {
-	port := strconv.Itoa(inbound.Port)
 	params := url.Values{}
-
-	if inbound.ServerName != "" {
-		params.Set("sni", inbound.ServerName)
-	}
-	if inbound.ALPN != "" {
-		params.Set("alpn", inbound.ALPN)
-	}
-	if inbound.Insecure {
-		params.Set("insecure", "1")
-	}
-	if inbound.ECHEnabled && inbound.ECHConfig != "" {
-		params.Set("ech", extractECHConfig(inbound.ECHConfig))
+	switch inbound.TLSType {
+	case "reality":
+		params.Set("security", "reality")
+		params.Set("sni", inbound.RealityServerName)
+		params.Set("pbk", inbound.RealityPublicKey)
+		params.Set("sid", anytlsRealityShortID(inbound))
+		if inbound.UTLS != "" {
+			params.Set("fp", inbound.UTLS)
+		}
+	default:
+		if inbound.ServerName != "" {
+			params.Set("sni", inbound.ServerName)
+		}
+		if inbound.ALPN != "" {
+			params.Set("alpn", inbound.ALPN)
+		}
+		if inbound.Insecure {
+			params.Set("insecure", "1")
+		}
+		if inbound.ECHEnabled && inbound.ECHConfig != "" {
+			params.Set("ech", extractECHConfig(inbound.ECHConfig))
+		}
 	}
 	params.Set("keepalive", fmt.Sprintf("%d,%d,%d",
 		inbound.AnyTLSIdleSessionCheckInterval,
@@ -32,8 +42,21 @@ func anytls(password string, host string, inbound database.Inbound) string {
 		inbound.AnyTLSMinIdleSession,
 	))
 
-	name := url.PathEscape(inbound.Name)
-	return "anytls://" + password + "@" + host + ":" + port + "?" + params.Encode() + "#" + name
+	return (&url.URL{
+		Scheme:   "anytls",
+		User:     url.User(password),
+		Host:     net.JoinHostPort(host, strconv.Itoa(inbound.Port)),
+		RawQuery: params.Encode(),
+		Fragment: inbound.Name,
+	}).String()
+}
+
+func anytlsRealityShortID(inbound database.Inbound) string {
+	var shortIDs []string
+	if json.Unmarshal([]byte(inbound.RealityShortIDs), &shortIDs) == nil && len(shortIDs) > 0 {
+		return shortIDs[0]
+	}
+	return ""
 }
 
 func anytlsClash(password string, host string, inbound database.Inbound) string {
@@ -108,31 +131,40 @@ func anytlsSingBox(password string, host string, inbound database.Inbound) strin
 	}
 
 	tls := map[string]any{"enabled": true}
-	if inbound.ServerName != "" {
-		tls["server_name"] = inbound.ServerName
-	}
 	if inbound.UTLS != "" {
 		tls["utls"] = map[string]any{"enabled": true, "fingerprint": inbound.UTLS}
 	}
-	if inbound.Insecure {
-		tls["insecure"] = true
-	}
-	if inbound.ALPN != "" {
-		tls["alpn"] = strings.Split(inbound.ALPN, ",")
-	}
-	if inbound.CipherSuites != "" {
-		tls["cipher_suites"] = strings.Split(inbound.CipherSuites, ",")
-	}
-	if inbound.TLSMinVersion != "" {
-		tls["min_version"] = inbound.TLSMinVersion
-	}
-	if inbound.TLSMaxVersion != "" {
-		tls["max_version"] = inbound.TLSMaxVersion
-	}
-	if inbound.ECHEnabled && inbound.ECHConfig != "" {
-		tls["ech"] = map[string]any{
-			"enabled": true,
-			"config":  strings.Split(inbound.ECHConfig, "\n"),
+	if inbound.TLSType == "reality" {
+		tls["server_name"] = inbound.RealityServerName
+		tls["reality"] = map[string]any{
+			"enabled":    true,
+			"public_key": inbound.RealityPublicKey,
+			"short_id":   anytlsRealityShortID(inbound),
+		}
+	} else {
+		if inbound.ServerName != "" {
+			tls["server_name"] = inbound.ServerName
+		}
+		if inbound.Insecure {
+			tls["insecure"] = true
+		}
+		if inbound.ALPN != "" {
+			tls["alpn"] = strings.Split(inbound.ALPN, ",")
+		}
+		if inbound.CipherSuites != "" {
+			tls["cipher_suites"] = strings.Split(inbound.CipherSuites, ",")
+		}
+		if inbound.TLSMinVersion != "" {
+			tls["min_version"] = inbound.TLSMinVersion
+		}
+		if inbound.TLSMaxVersion != "" {
+			tls["max_version"] = inbound.TLSMaxVersion
+		}
+		if inbound.ECHEnabled && inbound.ECHConfig != "" {
+			tls["ech"] = map[string]any{
+				"enabled": true,
+				"config":  strings.Split(inbound.ECHConfig, "\n"),
+			}
 		}
 	}
 	out["tls"] = tls

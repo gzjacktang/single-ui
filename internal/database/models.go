@@ -167,7 +167,7 @@ type Inbound struct {
 	ECHKey        string `gorm:"type:text"` // ECH 私钥，PEM 格式，服务端用
 	ECHConfig     string `gorm:"type:text"` // ECH 公钥配置，PEM 格式，下发给客户端
 
-	// Reality（VLESS 专用）
+	// Reality（可用于支持 Reality 的 TLS 入站）
 	RealityServerName  string // SNI，如 www.amd.com
 	RealityServer      string // 伪装目标，如 www.amd.com
 	RealityServerPort  int    // 伪装目标端口
