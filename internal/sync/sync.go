@@ -3,8 +3,8 @@ package sync
 import (
 	"time"
 
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/sync/slinx"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/sync/slinx"
 )
 
 var stopChans = map[uint]chan struct{}{}
@@ -51,7 +51,7 @@ func start(b database.Board) {
 
 func sync(b database.Board) {
 	switch b.Type {
-	case "SLINX":
+	case "SBOX", "SLINX":
 		slinx.Sync(b)
 	}
 }

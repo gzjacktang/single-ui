@@ -14,7 +14,7 @@ var (
 )
 
 func box(content string, title ...string) string {
-	t := "SLINX"
+	t := "SBOX"
 	if len(title) > 0 && title[0] != "" {
 		t = title[0]
 	}

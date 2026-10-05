@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/slinxlink/node/internal/database"
-	tpl "github.com/slinxlink/node/internal/sub/template"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/database"
+	tpl "github.com/gzjacktang/single-ui/internal/sub/template"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 // ── 订阅入口 ─────────────────────────────────────────────────────────
@@ -46,7 +46,7 @@ func Clash(token string) (string, string) {
 
 	name := util.SanitizeFileName(user.Name)
 	if name == "" {
-		name = "SLINX"
+		name = "SBOX"
 	}
 	return tpl.RenderClash(proxies), name
 }
@@ -70,7 +70,7 @@ func Surge(token string) (string, string) {
 
 	name := util.SanitizeFileName(user.Name)
 	if name == "" {
-		name = "SLINX"
+		name = "SBOX"
 	}
 	return tpl.RenderSurge(proxies, names), name
 }

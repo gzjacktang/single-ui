@@ -3,10 +3,10 @@ package job
 import (
 	"time"
 
-	"github.com/slinxlink/node/internal/cert"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/task"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/cert"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/task"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func CertRenew() {

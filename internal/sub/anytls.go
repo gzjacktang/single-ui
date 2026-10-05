@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 func anytls(password string, host string, inbound database.Inbound) string {

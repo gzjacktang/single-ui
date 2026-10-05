@@ -4,9 +4,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/sub/template"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/sub/template"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func RulesetRefresh() {

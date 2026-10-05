@@ -9,8 +9,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/sub"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/sub"
 )
 
 func GetSubscriptionPage(c *gin.Context, webFS embed.FS) {

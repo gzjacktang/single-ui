@@ -103,7 +103,7 @@ step "更新系统"
 $PKG update -y
 
 step "安装依赖"
-$PKG install -y curl chrony mtr gzip sqlite3
+$PKG install -y curl chrony gzip sqlite3
 
 step "设置系统时间同步"
 timedatectl set-timezone Asia/Shanghai
@@ -144,7 +144,7 @@ DATA_DIR="$SLINX_DIR/data"
 CERT_DIR="$SLINX_DIR/cert"
 mkdir -p $BIN_DIR $DATA_DIR $CERT_DIR
 
-step "下载 slinx"
+step "下载 SBOX 面板"
 systemctl stop slinx.service 2>/dev/null || true
 SLINX_URL="https://github.com/gzjacktang/single-ui/releases/download/${RELEASE}/slinx_linux_${SLINX_ARCH}"
 curl -fLo $SLINX_DIR/slinx $SLINX_URL
@@ -163,20 +163,20 @@ if [[ "$FRESH_INSTALL" == "true" ]]; then
     if [[ "$ACCESS_MODE" == "domain" ]]; then
         SETUP_ARGS+=(--domain "$PANEL_DOMAIN" --email "$ACME_EMAIL")
     fi
-	if ! (cd "$SLINX_DIR" && SLINX_SETUP_PASSWORD="$PANEL_PASSWORD" ./slinx "${SETUP_ARGS[@]}"); then
+	if ! (cd "$SLINX_DIR" && SBOX_SETUP_PASSWORD="$PANEL_PASSWORD" ./slinx "${SETUP_ARGS[@]}"); then
 		echo -e "${RED}面板初始化失败，已清理未完成的配置${PLAIN}"
 		rm -f "$DATA_DIR/slinx.db" "$DATA_DIR/slinx.db-shm" "$DATA_DIR/slinx.db-wal"
 		rm -rf "$CERT_DIR"
 		mkdir -p "$CERT_DIR"
 		exit 1
 	fi
-    unset PANEL_PASSWORD PANEL_PASSWORD_CONFIRM SLINX_SETUP_PASSWORD
+    unset PANEL_PASSWORD PANEL_PASSWORD_CONFIRM SBOX_SETUP_PASSWORD
 fi
 
 step "创建 systemd 服务"
 cat <<EOF > /etc/systemd/system/slinx.service
 [Unit]
-Description=SLINX Service
+Description=SBOX Service
 After=network.target nss-lookup.target
 Wants=network.target
 
@@ -201,7 +201,14 @@ systemctl daemon-reload
 systemctl enable slinx.service
 systemctl start slinx.service
 
-step "注册管理命令"
+step "注册 SBOX 管理命令"
+cat <<EOF > /usr/local/bin/sbox
+#!/bin/bash
+/etc/slinx/slinx cli
+EOF
+chmod +x /usr/local/bin/sbox
+
+# 保留旧命令，避免已有自动化脚本在升级后失效。
 cat <<EOF > /usr/local/bin/slinx
 #!/bin/bash
 /etc/slinx/slinx cli
@@ -211,7 +218,7 @@ chmod +x /usr/local/bin/slinx
 echo ""
 echo -e "${PINK}>>> 安装完成${PLAIN}"
 echo -e "${PINK}————————————————————————————————————————${PLAIN}"
-echo -e "${PINK}管理脚本命令: slinx${PLAIN}"
+echo -e "${PINK}管理脚本命令: sbox${PLAIN}"
 echo ""
 sleep 2
-slinx
+sbox

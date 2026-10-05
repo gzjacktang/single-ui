@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/shirou/gopsutil/v3/net"
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 	"gorm.io/gorm"
 )
 

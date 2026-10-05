@@ -9,10 +9,10 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/slinxlink/node/internal/cert"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/task"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/cert"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/task"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 type Options struct {
@@ -155,7 +155,10 @@ func Command(args []string) error {
 		return err
 	}
 	if options.Password == "" {
-		options.Password = os.Getenv("SLINX_SETUP_PASSWORD")
+		options.Password = os.Getenv("SBOX_SETUP_PASSWORD")
+		if options.Password == "" {
+			options.Password = os.Getenv("SLINX_SETUP_PASSWORD")
+		}
 	}
 	return Run(options)
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/mem"
 	"github.com/shirou/gopsutil/v3/net"
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 var lastNetIO []net.IOCountersStat

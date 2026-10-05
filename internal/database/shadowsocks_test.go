@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/util"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )

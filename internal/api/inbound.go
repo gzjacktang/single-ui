@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/core"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/route"
-	"github.com/slinxlink/node/internal/service"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/core"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/route"
+	"github.com/gzjacktang/single-ui/internal/service"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func GetInbounds(c *gin.Context) {

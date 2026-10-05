@@ -17,9 +17,9 @@ import (
 	legolog "github.com/go-acme/lego/v4/log"
 	"github.com/go-acme/lego/v4/providers/dns/alidns"
 	"github.com/go-acme/lego/v4/providers/dns/cloudflare"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/task"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/task"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 var certDir = "cert"

@@ -71,11 +71,6 @@
               </Row>
             </form>
           </Section>
-          <Section title="系统">
-            <Row title="BBR 加速" subtitle="TCP 拥塞控制优化">
-              <Toggle v-model="Config.BBR" />
-            </Row>
-          </Section>
           <Section title="重置" :default-open="false">
             <Row title="恢复默认" subtitle="重置所有面板配置为默认值并重启核心">
               <button class="reset" @click="reset">重置</button>

@@ -5,10 +5,10 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/core"
-	"github.com/slinxlink/node/internal/database"
-	syncer "github.com/slinxlink/node/internal/sync"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/core"
+	"github.com/gzjacktang/single-ui/internal/database"
+	syncer "github.com/gzjacktang/single-ui/internal/sync"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func GetBoards(c *gin.Context) {

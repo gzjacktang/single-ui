@@ -3,7 +3,7 @@ package core
 import (
 	"strings"
 
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 var validLogLevels = map[string]bool{

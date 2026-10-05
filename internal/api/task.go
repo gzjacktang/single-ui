@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/slinxlink/node/internal/task"
+	"github.com/gzjacktang/single-ui/internal/task"
 )
 
 func TaskLog(c *gin.Context) {

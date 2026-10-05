@@ -1,4 +1,4 @@
-module github.com/slinxlink/node
+module github.com/gzjacktang/single-ui
 
 go 1.26.3
 

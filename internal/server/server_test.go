@@ -13,6 +13,7 @@ func TestPanelAssetsHandlerSupportsNestedPanelPath(t *testing.T) {
 		"assets/main.js":  {Data: []byte("const logo = '/assets/logo.webp'")},
 		"assets/main.css": {Data: []byte(".icon { background: url(/assets/icon.woff2) }")},
 		"favicon.ico":     {Data: []byte("ico")},
+		"favicon.png":     {Data: []byte("png")},
 	}
 	handler := panelAssetsHandler(dist, "/private/admin/panel")
 
@@ -20,6 +21,7 @@ func TestPanelAssetsHandlerSupportsNestedPanelPath(t *testing.T) {
 		"/private/admin/panel/assets/main.js",
 		"/private/admin/panel/assets/main.css",
 		"/private/admin/panel/favicon.ico",
+		"/private/admin/panel/favicon.png",
 	} {
 		request := httptest.NewRequest(http.MethodGet, path, nil)
 		response := httptest.NewRecorder()
@@ -44,12 +46,12 @@ func TestPanelAssetsHandlerSupportsNestedPanelPath(t *testing.T) {
 }
 
 func TestPanelIndexHTMLSupportsRelativeAssets(t *testing.T) {
-	html := []byte(`<head><script src="./assets/main.js"></script><link href="./assets/main.css" rel="stylesheet"><link rel="icon" href="./favicon.ico"></head>`)
+	html := []byte(`<head><script src="./assets/main.js"></script><link href="./assets/main.css" rel="stylesheet"><link rel="icon" href="/favicon.png"></head>`)
 	got := string(panelIndexHTML(html, "/private/admin/panel"))
 	for _, asset := range []string{
 		`src="/private/admin/panel/assets/main.js"`,
 		`href="/private/admin/panel/assets/main.css"`,
-		`href="/private/admin/panel/favicon.ico"`,
+		`href="/private/admin/panel/favicon.png"`,
 	} {
 		if !strings.Contains(got, asset) {
 			t.Fatalf("index missing %s: %s", asset, got)

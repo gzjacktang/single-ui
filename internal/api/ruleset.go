@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/job"
+	"github.com/gzjacktang/single-ui/internal/job"
 )
 
 func RefreshRuleset(c *gin.Context) {

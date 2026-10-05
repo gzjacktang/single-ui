@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 const (

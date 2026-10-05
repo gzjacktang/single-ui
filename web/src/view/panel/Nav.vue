@@ -1,9 +1,9 @@
 <template>
   <nav :class="{ collapse: Shrink }">
     <div class="header">
-      <img src="@/asset/image/logo.webp" alt="SLINX" />
+      <img src="@/asset/image/sbox-mark.png" alt="SBOX" />
       <label class="title shrink">
-        <strong>SLINX</strong>
+        <strong>SBOX</strong>
         <span>节点管理</span>
       </label>
       <button class="menu" @click="Menu = !Menu">
@@ -59,7 +59,6 @@ const links = computed(() => [
   { to: '/user', icon: 'rss_feed', label: '用户' },
   { to: '/endpoint', icon: 'cloud_sync', label: '端点' },
   { divider: true },
-  { to: '/detect', icon: 'travel_explore', label: 'IP检测' },
   { to: '/core', icon: 'handyman', label: '核心配置' },
   { to: '/config', icon: 'settings', label: '面板设置' },
 ])

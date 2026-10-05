@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 var clashGroupName = map[string]string{
@@ -26,7 +26,7 @@ func GenerateClash() {
 	}
 
 	var sb strings.Builder
-	sb.WriteString(`# SLINX Node · Clash 订阅
+	sb.WriteString(`# SBOX · Clash 订阅
 mixed-port: 7890
 allow-lan: true
 mode: rule

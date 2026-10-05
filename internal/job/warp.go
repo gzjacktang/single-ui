@@ -3,10 +3,10 @@ package job
 import (
 	"time"
 
-	"github.com/slinxlink/node/internal/core"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/service"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/core"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/service"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func WarpAutoUpdate() {

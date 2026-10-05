@@ -5,9 +5,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/service"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func GetConfig(c *gin.Context) {
@@ -55,10 +54,6 @@ func UpdateConfig(c *gin.Context) {
 
 	util.InitLog(req.LogPath, req.LogLevel, req.LogEnable)
 
-	if req.BBR != prev.BBR {
-		service.BBRApply(req.BBR)
-	}
-
 	util.Info("[config] 面板配置已更新")
 	c.JSON(http.StatusOK, gin.H{"message": "ok"})
 }
@@ -82,7 +77,6 @@ func ResetConfig(c *gin.Context) {
 		LogEnable:         true,
 		LogLevel:          "info",
 		LogPath:           "data/slinx.log",
-		BBR:               true,
 		BoardEnable:       false,
 		Repo:              "https://github.com/gzjacktang/single-ui",
 	}

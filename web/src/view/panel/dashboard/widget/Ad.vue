@@ -1,20 +1,19 @@
 <template>
-    <a class="ad" href="https://www.slinx.ink" target="_blank" rel="noopener noreferrer">
+    <a class="ad" href="https://github.com/gzjacktang/single-ui" target="_blank" rel="noopener noreferrer">
         <div class="header">
             <div class="title">
-                <h1>www.slinx.link</h1>
-                <h2>独享节点 · 独立IP · 专属域名 · 无限设备</h2>
+                <h1>SBOX</h1>
+                <h2>sing-box 节点管理</h2>
             </div>
             <div class="logo">
-                <img src="@/asset/image/logo.webp" alt="SLINX" />
-                <span>SLINX</span>
+                <img src="@/asset/image/sbox-mark.png" alt="SBOX" />
+                <span>SBOX</span>
             </div>
         </div>
         <div class="divider-notext"></div>
         <div class="body">
-            <p>厌倦了共享机场？自建节点太麻烦？交给我们，省心用网</p>
-            <p>需要技术支持、定制APP或运维合作？欢迎联系我们</p>
-            <a>了解跟多<i class="icon">open_in_new</i></a>
+            <p>管理入站、用户与证书。</p>
+            <a>查看项目<i class="icon">open_in_new</i></a>
         </div>
     </a>
 </template>

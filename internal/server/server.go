@@ -9,9 +9,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/api"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/api"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 var webFS embed.FS
@@ -43,7 +43,7 @@ func StartWeb() error {
 			return
 		}
 
-		if strings.HasPrefix(path, panelPath+"/assets/") || path == panelPath+"/favicon.ico" {
+		if strings.HasPrefix(path, panelPath+"/assets/") || path == panelPath+"/favicon.ico" || path == panelPath+"/favicon.png" {
 			static.ServeHTTP(c.Writer, c.Request)
 			return
 		}
@@ -77,6 +77,8 @@ func panelIndexHTML(data []byte, panelPath string) []byte {
 		`"./assets/`, `"`+panelPath+`/assets/`,
 		`"/favicon.ico`, `"`+panelPath+`/favicon.ico`,
 		`"./favicon.ico`, `"`+panelPath+`/favicon.ico`,
+		`"/favicon.png`, `"`+panelPath+`/favicon.png`,
+		`"./favicon.png`, `"`+panelPath+`/favicon.png`,
 	).Replace(html))
 }
 
@@ -84,7 +86,7 @@ func panelAssetsHandler(dist fs.FS, panelPath string) http.Handler {
 	static := http.FileServer(http.FS(dist))
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		path := request.URL.Path
-		if strings.HasPrefix(path, panelPath+"/assets/") || path == panelPath+"/favicon.ico" {
+		if strings.HasPrefix(path, panelPath+"/assets/") || path == panelPath+"/favicon.ico" || path == panelPath+"/favicon.png" {
 			cloned := request.Clone(request.Context())
 			relativePath := strings.TrimPrefix(path, panelPath)
 			if strings.HasSuffix(relativePath, ".css") || strings.HasSuffix(relativePath, ".js") {

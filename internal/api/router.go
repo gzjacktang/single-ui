@@ -73,16 +73,8 @@ func RegisterRoutes(r *gin.Engine, panelPath string) {
 		private.DELETE("/dns/:id", DeleteDnsAccount)
 
 		// 日志
-		private.GET("/log/slinx", SlinxLog)
+		private.GET("/log/sbox", SboxLog)
 		private.GET("/log/core", CoreLog)
-
-		// 检测
-		private.POST("/detect/ip/fetch", FetchIP)
-		private.GET("/detect/ip", DetectIP)
-		private.POST("/detect/unlock/fetch", FetchUnlock)
-		private.GET("/detect/unlock", DetectUnlock)
-		private.GET("/detect/back-route", DetectBackRoute)
-		private.POST("/detect/back-route/fetch", FetchBackRoute)
 
 		// WARP
 		private.GET("/warp", GetWarp)

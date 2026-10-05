@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 type Connection struct {

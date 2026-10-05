@@ -21,7 +21,7 @@
                 <div class="form-row quarter">
                     <span class="form-label">面板类型</span>
                     <Select v-model="form.Type" :options="[
-                        { label: 'SLINX', value: 'SLINX' },
+                        { label: 'SBOX', value: 'SBOX' },
                     ]" />
                 </div>
                 <div class="form-row quarter">
@@ -57,7 +57,7 @@ const form = defineModel<any>({ default: () => ({
     NodeID: 0,
     Key: '',
     Inbound: 0,
-    Type: 'SLINX',
+    Type: 'SBOX',
     SyncInterval: 60,
 }) })
 

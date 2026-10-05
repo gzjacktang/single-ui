@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/slinxlink/node/internal/core"
+	"github.com/gzjacktang/single-ui/internal/core"
 )
 
 func Shutdown() {

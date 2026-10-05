@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func TestShadowsocks2022ShareLinkAndSingBoxOutbound(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 type vmessLink struct {

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/util"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -46,9 +46,6 @@ func Init() (bool, error) {
 		&Rule{},
 		&Warp{},
 		&SystemLog{},
-		&IP{},
-		&Unlock{},
-		&BackRoute{},
 	); err != nil {
 		return false, err
 	}
@@ -95,9 +92,6 @@ func backfillShadowsocksKeys() error {
 func createIndexes() {
 	DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_board_user ON board_user(board_id, user_id)")
 	DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_endpoint_tag ON endpoint(tag)")
-	DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_ip_source_version ON ip(source, ip_version)")
-	DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_unlock_ip_version_platform ON unlock(ip, ip_version, platform)")
-	DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_back_route_city ON back_route(city)")
 	DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_core_single ON core(name)")
 	DB.Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_cert_domain ON cert(domain)")
 }
@@ -128,7 +122,6 @@ func initConfig() (bool, error) {
 		LogLevel:  "info",
 		LogPath:   "data/slinx.log",
 
-		BBR: true,
 
 		BoardEnable: false,
 

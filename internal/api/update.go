@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/slinxlink/node/internal/app"
-	"github.com/slinxlink/node/internal/update"
+	"github.com/gzjacktang/single-ui/internal/app"
+	"github.com/gzjacktang/single-ui/internal/update"
 )
 
 func GetVersion(c *gin.Context) {

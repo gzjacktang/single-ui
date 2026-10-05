@@ -3,8 +3,8 @@
         <main class="auth">
             <div class="card">
                 <div class="header">
-                    <img src="@/asset/image/logo.webp" alt="SLINX" />
-                    <span>SLINX</span>
+                    <img src="@/asset/image/sbox-mark.png" alt="SBOX" />
+                    <span>SBOX</span>
                 </div>
                 <div class="body">
                     <span>嗨，你好</span>
@@ -16,7 +16,7 @@
                         {{ loading ? '登录中...' : '登录' }}
                     </button>
                 </div>
-                <div class="divider">SLINX</div>
+                <div class="divider">SBOX</div>
                 <div class="footer">
                     <h1>自由互联 连接世界</h1>
                 </div>

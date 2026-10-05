@@ -12,8 +12,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/util"
 	"gorm.io/gorm"
 )
 
@@ -216,7 +216,7 @@ func WarpRegister() (*WarpData, error) {
 		"tos":   time.Now().UTC().Format(time.RFC3339),
 		"type":  "PC",
 		"name":  hostname,
-		"model": "slinx",
+		"model": "sbox",
 	}
 
 	resp, err := warpDoRequest(http.MethodPost, warpAPIBase+"/reg", "", body)

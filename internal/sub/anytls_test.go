@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 func TestAnyTLSShareAfterSwitchingFromTLS2Reality(t *testing.T) {

@@ -4,11 +4,11 @@ import (
 	"embed"
 	"os"
 
-	"github.com/slinxlink/node/internal/app"
-	"github.com/slinxlink/node/internal/bootstrap"
-	"github.com/slinxlink/node/internal/cli"
-	"github.com/slinxlink/node/internal/server"
-	"github.com/slinxlink/node/internal/setup"
+	"github.com/gzjacktang/single-ui/internal/app"
+	"github.com/gzjacktang/single-ui/internal/bootstrap"
+	"github.com/gzjacktang/single-ui/internal/cli"
+	"github.com/gzjacktang/single-ui/internal/server"
+	"github.com/gzjacktang/single-ui/internal/setup"
 )
 
 var Version = "dev"

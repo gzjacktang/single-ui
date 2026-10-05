@@ -3,7 +3,7 @@ package route
 import (
 	"encoding/json"
 
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 // CleanupRule 统一入口，根据 type 分流

@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func GenerateSurge() {
@@ -16,7 +16,7 @@ func GenerateSurge() {
 	}
 
 	var sb strings.Builder
-	fmt.Fprintf(&sb, `# SLINX Node · Surge
+	fmt.Fprintf(&sb, `# SBOX · Surge
 [General]
 loglevel = notify
 dns-server = 8.8.8.8, 1.1.1.1

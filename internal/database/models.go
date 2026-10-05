@@ -25,8 +25,6 @@ type Config struct {
 
 	BoardEnable bool `json:"-"`
 
-	BBR bool
-
 	Repo      string
 	StartedAt time.Time
 
@@ -199,8 +197,8 @@ func (User) TableName() string { return "user" }
 type Board struct {
 	ID           uint `gorm:"primarykey"`
 	Enable       bool
-	Name         string // 备注名，如 "slinx.link"
-	Host         string // 面板地址，如 "https://slinx.link"
+	Name         string // 备注名，如 "example.com"
+	Host         string // 面板地址，如 "https://example.com"
 	NodeID       int    // 节点ID
 	Key          string // 通讯密钥
 	Inbound      int    // 对接的入站ID

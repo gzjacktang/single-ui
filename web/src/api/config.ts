@@ -17,6 +17,6 @@ export const Log = () => {
   const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
   const token = localStorage.getItem('token') ?? ''
   return new WebSocket(
-    `${protocol}//${location.host}${withPanelPath('/api/log/slinx')}?token=${token}`,
+    `${protocol}//${location.host}${withPanelPath('/api/log/sbox')}?token=${token}`,
   )
 }

@@ -5,13 +5,12 @@ import (
 	"log"
 	"time"
 
-	"github.com/slinxlink/node/internal/cli"
-	"github.com/slinxlink/node/internal/core"
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/job"
-	"github.com/slinxlink/node/internal/server"
-	"github.com/slinxlink/node/internal/service"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/cli"
+	"github.com/gzjacktang/single-ui/internal/core"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/job"
+	"github.com/gzjacktang/single-ui/internal/server"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 func Start() {
@@ -20,10 +19,6 @@ func Start() {
 	if err != nil {
 		cli.Status("数据库", "初始化失败", false)
 		log.Fatal(err)
-	}
-
-	if isFirstRun {
-		service.BBREnable()
 	}
 
 	// ── 2. 读取配置 ──────────────────────────────────────────────────────────
@@ -64,11 +59,9 @@ func Start() {
 
 	go func() {
 		ipv4, ipv6 := util.GetPublicIPs()
-		bbrStatus := service.BBRStatus()
 		database.DB.Model(&database.Config{}).Where("id = 1").Updates(map[string]interface{}{
 			"ipv4": ipv4,
 			"ipv6": ipv6,
-			"bbr":  bbrStatus,
 		})
 		if isFirstRun {
 			printFirstRun(ipv4)

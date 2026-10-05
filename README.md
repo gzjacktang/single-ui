@@ -1,6 +1,6 @@
 <div align="center">
-  <img src="web/src/asset/image/logo.webp" width="50" />
-  <h1>SLINX node</h1>
+  <img src="web/src/asset/image/sbox-mark.png" width="50" />
+  <h1>SBOX</h1>
   <p>基于 sing-box 核心的节点管理面板</p>
 
 	[![Release](https://img.shields.io/github/v/release/gzjacktang/single-ui)](https://github.com/gzjacktang/single-ui/releases)
@@ -25,7 +25,7 @@ bash <(curl -sL https://raw.githubusercontent.com/gzjacktang/single-ui/main/inst
 
 选择域名访问时，请先将域名解析到本机，并确保 TCP 80 端口可被公网访问。安装程序会自动注册 Let's Encrypt、申请面板证书、启用 HTTPS，并由后台任务自动续签。
 
-安装完成后，使用 `slinx` 进入终端管理菜单。面板端口只在安装阶段设置，面板设置页面不会提供端口修改项。
+安装完成后，使用 `sbox` 进入终端管理菜单。为兼容已安装实例，旧的 `slinx` 命令、服务名和数据路径暂时保留；界面品牌为 SBOX。面板端口只在安装阶段设置，面板设置页面不会提供端口修改项。
 
 ### 旧版终端更新失败时
 
@@ -54,7 +54,7 @@ test -s "$tmp" && chmod 755 "$tmp" && mv "$tmp" /etc/slinx/slinx && systemctl re
 
 ```bash
 cd /etc/slinx
-SLINX_SETUP_PASSWORD='your-password' ./slinx setup \
+SBOX_SETUP_PASSWORD='your-password' ./slinx setup \
   --port 2053 \
   --path /private/admin/panel \
   --username admin_user \
@@ -65,7 +65,7 @@ SLINX_SETUP_PASSWORD='your-password' ./slinx setup \
 
 ## 简介
 
-SLINX node 是一个基于 sing-box 核心的轻量节点管理面板，专注入站、用户、端口转发、证书和网络端点管理。
+SBOX 是一个基于 sing-box 核心的轻量节点管理面板，专注入站、用户、端口转发、证书和网络端点管理。
 
 ## 功能
 
@@ -74,7 +74,6 @@ SLINX node 是一个基于 sing-box 核心的轻量节点管理面板，专注�
 - 📜 证书管理，支持 Let's Encrypt、ZeroSSL，DNS/HTTP 验证和自动续签
 - 👥 多用户管理，单节点链接可复制或使用二维码分享
 - 🌐 端点管理（WireGuard / Cloudflare WARP），支持一键注册换IP与路由规则绑定
-- 🔍 IP 检测、解锁检测、回程检测
 - 🔄 一键更新，支持核心独立更新
 
 ## 功能边界
@@ -82,11 +81,12 @@ SLINX node 是一个基于 sing-box 核心的轻量节点管理面板，专注�
 - 不提供机器资源监控仪表盘，也不会启动 CPU、内存、流量等监控任务。
 - 不提供订阅服务、订阅端口或订阅页面；用户分享使用单节点链接、复制和二维码。
 - 不提供面板对接和同步功能。
+- 不提供 IP/解锁/回程检测，也不会在安装或启动时修改系统 BBR 配置。
 - 管理员可以在“面板设置”中修改用户名和密码；修改路径后需要按页面提示重启面板。
 
 ## 关于本项目
 
-SLINX node 专为普通自建节点用户设计，化繁为简，让搭建节点不再是门槛。
+SBOX 专为普通自建节点用户设计，化繁为简，让搭建节点不再是门槛。
 
 整个使用流程极其简单：登录终端 → 运行安装脚本完成初始设置 → 打开面板 → 添加入站和用户 → 复制节点链接。
 
@@ -94,7 +94,6 @@ SLINX node 专为普通自建节点用户设计，化繁为简，让搭建节点
 
 ## 截图
 
-![Detection](doc/detect.png)
 ![Inbound](doc/inbound.png)
 
 ## 支持的平台
@@ -117,15 +116,10 @@ AnyTLS 可使用 TLS 或 Reality，但不支持 VLESS 专用的 Vision Flow。An
 
 v3 版本计划支持：繁体中文、English、Русский、فارسی
 
-## 社区
-
-[![Telegram](https://img.shields.io/badge/Telegram-@SLINXlink-26A5E4?logo=telegram&logoColor=white)](https://t.me/slinxlink)
-
 ## 鸣谢
 
 - [sing-box](https://github.com/SagerNet/sing-box) — 核心代理引擎
 - [3x-ui](https://github.com/MHSanaei/3x-ui) — UI 界面设计借鉴
-- [lmc999](https://github.com/lmc999/RegionRestrictionCheck) — 解锁检测脚本，已进行 Go 语言化改造
 - [Loyalsoldier](https://github.com/Loyalsoldier/clash-rules) — Clash 规则集
 - [ACL4SSR](https://github.com/ACL4SSR/ACL4SSR) — Clash 规则集
 - [Claude](https://claude.ai) — AI 编程助手，本项目大量代码由 Claude 协助完成

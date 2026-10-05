@@ -13,9 +13,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/slinxlink/node/internal/database"
-	"github.com/slinxlink/node/internal/service"
-	"github.com/slinxlink/node/internal/util"
+	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/service"
+	"github.com/gzjacktang/single-ui/internal/util"
 )
 
 type Manager struct {

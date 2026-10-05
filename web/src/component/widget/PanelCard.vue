@@ -1,16 +1,12 @@
 <template>
     <div class="card md">
         <div class="header">
-            <div class="title">SLINX node</div>
+            <div class="title">SBOX</div>
         </div>
         <div class="actions">
-            <a class="action-btn" href="https://github.com/slinxlink/node" target="_blank" rel="noopener noreferrer">
+            <a class="action-btn" href="https://github.com/gzjacktang/single-ui" target="_blank" rel="noopener noreferrer">
                 <img class="svg" src="@/asset/image/social/github.svg" alt="GitHub" />
                 GitHub 仓库
-            </a>
-            <a class="action-btn" href="https://t.me/slinxlink" target="_blank" rel="noopener noreferrer">
-                <img class="svg" src="@/asset/image/social/telegram.svg" alt="Telegram" />
-                加入频道
             </a>
             <button class="action-btn version" :disabled="!hasUpdate" :class="{ 'has-update': hasUpdate }" @click="openUpdate">
                 <i class="icon">new_releases</i>

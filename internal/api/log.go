@@ -9,7 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 func tailLines(path string, n int) ([]string, error) {
@@ -34,8 +34,7 @@ func tailLines(path string, n int) ([]string, error) {
 	return lines, nil
 }
 
-func parseSlinxLog(line string) logLine {
-	// 2026-06-08 19:44:50 INFO board:SLINX 拉取到 3 个用户
+func parsePanelLog(line string) logLine {
 	parts := strings.SplitN(line, " ", 4)
 	if len(parts) < 4 {
 		return logLine{Level: "INFO", Message: line}
@@ -107,12 +106,12 @@ func logWS(c *gin.Context, pathFn func() string, parseFn func(string) logLine) {
 	}
 }
 
-func SlinxLog(c *gin.Context) {
+func SboxLog(c *gin.Context) {
 	logWS(c, func() string {
 		var config database.Config
 		database.DB.First(&config)
 		return config.LogPath
-	}, parseSlinxLog)
+	}, parsePanelLog)
 }
 
 func CoreLog(c *gin.Context) {

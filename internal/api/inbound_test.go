@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	"github.com/slinxlink/node/internal/database"
+	"github.com/gzjacktang/single-ui/internal/database"
 )
 
 func TestNormalizeInboundSecurityForAnyTLSReality(t *testing.T) {

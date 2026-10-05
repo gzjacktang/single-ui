@@ -72,7 +72,7 @@ const baseBoard = () => ({
     NodeID: 0,
     Key: '',
     Inbound: 0,
-    Type: 'SLINX',
+    Type: 'SBOX',
     SyncInterval: 60,
 })
 
