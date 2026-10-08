@@ -40,6 +40,7 @@ jobs:
       - name: Build frontend and test panel
         run: |
           npm ci --prefix web
+          npm test --prefix web
           npm run build --prefix web
           go test ./...
 
@@ -118,6 +119,6 @@ jobs:
           else
             gh release create "$GITHUB_REF_NAME" artifacts/sbox_linux_* artifacts/slinx_linux_* artifacts/SHA256SUMS \
               --verify-tag --title "SBOX ${GITHUB_REF_NAME}" \
-              --notes "SBOX panel for Linux amd64 and arm64. Rebranded panel and management command, with a new logo; removed built-in BBR and IP/unlock/back-route detection. Legacy binary filenames remain available for existing installations." \
+              --generate-notes \
               --latest
           fi
