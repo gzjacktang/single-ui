@@ -52,7 +52,7 @@
       </div>
     </div>
   </main>
-  <Drawer v-model="showDrawer" :title="drawerTitle" @save="handleSave">
+  <Drawer v-model="showDrawer" :title="drawerTitle" :loading="saving" @save="handleSave">
     <Form v-model="defaultInbound" />
   </Drawer>
 </template>
@@ -77,6 +77,7 @@ const modal = inject<any>('modal')
 
 const inbounds = ref<any[]>([])
 const showDrawer = ref(false)
+const saving = ref(false)
 
 const baseInbound = () => ({
   Enable: true,
@@ -229,6 +230,8 @@ function openEdit(ib: any) {
 }
 
 async function handleSave() {
+  if (saving.value) return
+  saving.value = true
   const data = { ...defaultInbound.value }
 
   if (Array.isArray(data.ALPN)) {
@@ -244,13 +247,49 @@ async function handleSave() {
   }
 
   try {
-    await saveInbound(data)
-    await load()
+    const saved = await saveInbound(data)
+    if (!saved?.ID) throw new Error('未收到保存结果')
+    const index = inbounds.value.findIndex(ib => ib.ID === saved.ID)
+    if (index === -1) inbounds.value.push(saved)
+    else inbounds.value[index] = saved
     showDrawer.value = false
     modal.value?.show('success', '保存成功')
   } catch (err: any) {
-    const msg = err?.error
-    modal.value?.show('error', msg)
+    if (err?.error) {
+      modal.value?.show('error', err.error)
+      return
+    }
+
+    // 核心重载可能短暂中断面板连接；先确认数据库里是否已经保存。
+    if (data.Protocol === 'tunnel') {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt > 0) await new Promise(resolve => setTimeout(() => resolve(undefined), 500))
+        try {
+          const latest = await getInbounds()
+          inbounds.value = latest
+          const persisted = latest.find((ib: Record<string, unknown>) =>
+            ib.Protocol === 'tunnel' &&
+            ib.Port === data.Port &&
+            ib.TunnelAddress === data.TunnelAddress.trim() &&
+            ib.TunnelPort === data.TunnelPort &&
+            ib.TunnelNetwork === data.TunnelNetwork &&
+            ib.Name === data.Name &&
+            ib.Enable === data.Enable &&
+            (!data.ID || ib.ID === data.ID)
+          )
+          if (persisted) {
+            showDrawer.value = false
+            modal.value?.show('success', '保存成功')
+            return
+          }
+        } catch {
+          // 连接恢复后再试；这里不能据此判断保存失败。
+        }
+      }
+    }
+    modal.value?.show('error', '保存结果暂时无法确认，请稍后刷新列表，避免重复提交。')
+  } finally {
+    saving.value = false
   }
 }
 </script>

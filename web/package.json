@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "run-p type-check \"build-only {@}\" -- && node scripts/check-panel-assets.mjs",
+    "test": "node --test scripts/*.test.mjs",
     "preview": "vite preview",
     "build-only": "vite build",
     "type-check": "vue-tsc --build",
