@@ -13,13 +13,14 @@ var Version = "dev"
 type updateResultMsg string
 
 type item struct {
-	label       string
-	labelFunc   func() string
-	action      func() string
-	asyncAction func() tea.Cmd
-	quit        bool
-	divider     bool
-	selectable  bool
+	label            string
+	labelFunc        func() string
+	action           func() string
+	asyncAction      func() tea.Cmd
+	quit             bool
+	divider          bool
+	selectable       bool
+	confirmUninstall bool
 }
 
 func (it item) getLabel() string {
@@ -30,11 +31,12 @@ func (it item) getLabel() string {
 }
 
 type model struct {
-	items       []item
-	cursor      int
-	startCursor int
-	output      string
-	loading     bool
+	items               []item
+	cursor              int
+	startCursor         int
+	output              string
+	loading             bool
+	confirmingUninstall bool
 }
 
 func (m model) Init() tea.Cmd {
@@ -49,6 +51,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		if m.loading {
+			return m, nil
+		}
+		if m.confirmingUninstall {
+			m.confirmingUninstall = false
+			if msg.String() == "ctrl+c" {
+				return m, tea.Quit
+			}
+			if msg.String() == "y" || msg.String() == "Y" {
+				m.output = m.items[m.cursor].action()
+			} else {
+				m.output = "已取消卸载"
+			}
 			return m, nil
 		}
 		switch msg.String() {
@@ -70,6 +84,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "enter":
 			if !m.items[m.cursor].selectable {
+				return m, nil
+			}
+			if m.items[m.cursor].confirmUninstall {
+				m.confirmingUninstall = true
+				m.output = ""
 				return m, nil
 			}
 			if m.items[m.cursor].quit {
@@ -132,7 +151,12 @@ func (m model) View() string {
 	}
 
 	result := strings.Join(renderedLines, "\n") + "\n"
-	if m.loading {
+	if m.confirmingUninstall {
+		result += renderInfo("确认彻底卸载", []string{
+			"将永久删除 /etc/slinx 下的数据库、证书和全部面板配置。",
+			"按 y 确认，其他按键取消。",
+		}) + "\n"
+	} else if m.loading {
 		result += renderStatus("更新", "下载中，请稍候...", true) + "\n"
 	} else if m.output != "" {
 		result += m.output + "\n"
@@ -165,7 +189,7 @@ func Start(version string) {
 		{label: "查看登录信息", selectable: true, action: func() string { return showLoginInfo() }},
 		{divider: true},
 		{label: "更新", selectable: true, asyncAction: update()},
-		{label: "卸载", selectable: true, action: func() string { return uninstall() }},
+		{label: "卸载", selectable: true, confirmUninstall: true, action: func() string { return uninstall() }},
 	}
 
 	m := model{items: items}

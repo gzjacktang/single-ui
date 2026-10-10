@@ -235,18 +235,59 @@ func update() func() tea.Cmd {
 }
 
 func uninstall() string {
-	runCmd("systemctl", "stop", "slinx")
-	runCmd("systemctl", "disable", "slinx")
-	runCmd("rm", "-f", "/etc/systemd/system/slinx.service")
-	runCmd("rm", "-rf", dir)
-	if err := removeManagementCommands("/usr/local/bin"); err != nil {
-		return renderStatus("卸载", "删除管理命令失败: "+err.Error(), false)
+	if err := uninstallAt(
+		"/etc/slinx",
+		"/etc/systemd/system/slinx.service",
+		"/usr/local/bin",
+		runCheckedCommand,
+		os.RemoveAll,
+	); err != nil {
+		return renderStatus("卸载", "卸载未完成: "+err.Error(), false)
 	}
-	runCmd("systemctl", "daemon-reload")
-	time.Sleep(5 * time.Second)
-	return renderStatus("卸载", "卸载成功", true) + "\n" + renderInfo("提示",
-		[]string{"", "5秒后自动退出脚本"},
+	return renderStatus("卸载", "卸载成功，数据库和证书已删除", true) + "\n" + renderInfo("提示",
+		[]string{"请退出管理菜单"},
 	)
+}
+
+func runCheckedCommand(name string, args ...string) error {
+	out, err := exec.Command(name, args...).CombinedOutput()
+	if err != nil {
+		if detail := strings.TrimSpace(string(out)); detail != "" {
+			return fmt.Errorf("%w: %s", err, detail)
+		}
+	}
+	return err
+}
+
+func uninstallAt(installDir, unitFile, commandDir string, runCommand func(string, ...string) error, removeAll func(string) error) error {
+	installDir = filepath.Clean(installDir)
+	if !filepath.IsAbs(installDir) || installDir == string(os.PathSeparator) {
+		return fmt.Errorf("安装目录不安全: %s", installDir)
+	}
+	if err := runCommand("systemctl", "stop", "slinx.service"); err != nil {
+		return fmt.Errorf("停止服务失败: %w", err)
+	}
+	if err := runCommand("systemctl", "disable", "slinx.service"); err != nil {
+		return fmt.Errorf("禁用服务失败: %w", err)
+	}
+	if err := removeAll(installDir); err != nil {
+		return fmt.Errorf("删除面板目录失败: %w", err)
+	}
+	if _, err := os.Lstat(installDir); err == nil {
+		return fmt.Errorf("删除面板目录失败: %s 仍存在", installDir)
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("检查面板目录失败: %w", err)
+	}
+	if err := os.Remove(unitFile); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("删除服务文件失败: %w", err)
+	}
+	if err := removeManagementCommands(commandDir); err != nil {
+		return fmt.Errorf("删除管理命令失败: %w", err)
+	}
+	if err := runCommand("systemctl", "daemon-reload"); err != nil {
+		return fmt.Errorf("刷新服务配置失败: %w", err)
+	}
+	return nil
 }
 
 func removeManagementCommands(commandDir string) error {
