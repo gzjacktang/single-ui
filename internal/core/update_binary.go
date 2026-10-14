@@ -304,7 +304,12 @@ func replaceCoreBinary(installed, candidate string, wasRunning bool, restart fun
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(backupDir)
+	keepBackup := false
+	defer func() {
+		if !keepBackup {
+			os.RemoveAll(backupDir)
+		}
+	}()
 	backup := filepath.Join(backupDir, "previous")
 	if err := os.Link(installed, backup); err != nil {
 		return fmt.Errorf("备份原内核失败: %w", err)
@@ -318,7 +323,8 @@ func replaceCoreBinary(installed, candidate string, wasRunning bool, restart fun
 	if err := restart(); err != nil {
 		restoreErr := os.Rename(backup, installed)
 		if restoreErr != nil {
-			return errors.Join(fmt.Errorf("新内核启动失败: %w", err), fmt.Errorf("恢复原内核失败: %w", restoreErr))
+			keepBackup = true
+			return errors.Join(fmt.Errorf("新内核启动失败: %w", err), fmt.Errorf("恢复原内核失败，原文件保留在 %s: %w", backup, restoreErr))
 		}
 		if rollbackErr := restart(); rollbackErr != nil {
 			return errors.Join(fmt.Errorf("新内核启动失败，已恢复原文件: %w", err), fmt.Errorf("原内核重新启动失败: %w", rollbackErr))

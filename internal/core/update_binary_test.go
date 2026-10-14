@@ -201,6 +201,41 @@ func TestReplaceCoreBinaryKeepsNewCoreWhenStopped(t *testing.T) {
 	}
 }
 
+func TestReplaceCoreBinaryPreservesBackupWhenRestoreFails(t *testing.T) {
+	dir := t.TempDir()
+	installed := filepath.Join(dir, "sing-box")
+	candidate := filepath.Join(dir, "candidate")
+	if err := os.WriteFile(installed, []byte("old core"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(candidate, []byte("new core"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	err := replaceCoreBinary(installed, candidate, true, func() error {
+		if err := os.Remove(installed); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.Mkdir(installed, 0700); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(installed, "block-restore"), nil, 0600); err != nil {
+			t.Fatal(err)
+		}
+		return errors.New("new core failed to start")
+	})
+	if err == nil {
+		t.Fatal("failed restore must return an error")
+	}
+	backups, err := filepath.Glob(filepath.Join(dir, ".sing-box-rollback-*", "previous"))
+	if err != nil || len(backups) != 1 {
+		t.Fatalf("preserved backups = %v, %v; want one", backups, err)
+	}
+	data, err := os.ReadFile(backups[0])
+	if err != nil || string(data) != "old core" {
+		t.Fatalf("preserved backup = %q, %v", data, err)
+	}
+}
+
 func TestBinaryUpdaterRejectsConcurrentUpdates(t *testing.T) {
 	u := &BinaryUpdater{}
 	u.mu.Lock()
