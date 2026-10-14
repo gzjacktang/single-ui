@@ -129,6 +129,39 @@ func TestAvailableCoreVersionsIncludesPreviewAndRollback(t *testing.T) {
 	}
 }
 
+func TestCoreVersionDiscoveryFollowsPagination(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page") == "2" {
+			fmt.Fprint(w, `[{"tag_name":"sing-box-1.13.13"}]`)
+		} else {
+			w.Header().Set("Link", `<ignored>; rel="next"`)
+			fmt.Fprint(w, `[{"tag_name":"sing-box-1.15.0-alpha.12","prerelease":true}]`)
+		}
+	}))
+	defer server.Close()
+	u := &BinaryUpdater{client: server.Client(), releasesURL: server.URL}
+	releases, err := u.releases(context.Background())
+	if err != nil || len(releases) != 2 || newestCoreRelease(releases) != "1.13.13" {
+		t.Fatalf("historical stable release lost after pagination: %+v, %v", releases, err)
+	}
+}
+
+func TestCoreCheckCanOfferPreviewOnlyCatalog(t *testing.T) {
+	installed := filepath.Join(t.TempDir(), "sing-box")
+	if err := os.WriteFile(installed, []byte("#!/bin/sh\necho 'sing-box version 1.14.3'\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `[{"tag_name":"sing-box-1.15.0-alpha.12","prerelease":true}]`)
+	}))
+	defer server.Close()
+	u := &BinaryUpdater{client: server.Client(), releasesURL: server.URL, manager: &Manager{BinPath: installed}}
+	info, err := u.Check(context.Background())
+	if err != nil || len(info.Versions) != 1 || info.HasUpdate {
+		t.Fatalf("preview-only catalog rejected: %+v, %v", info, err)
+	}
+}
+
 func TestDownloadCandidateVerifiesArchiveChecksum(t *testing.T) {
 	var archive bytes.Buffer
 	compressed := gzip.NewWriter(&archive)

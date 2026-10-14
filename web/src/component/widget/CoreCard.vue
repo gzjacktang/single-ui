@@ -94,7 +94,7 @@ async function checkForUpdate(showResult: boolean) {
         if (showResult) {
             modal.value?.show('success', updateInfo.value.has_update
                 ? `发现新版本 sing-box ${updateInfo.value.latest_version}`
-                : '内核已是最新版本')
+                : '版本列表已刷新，可选择版本安装或回退')
         }
     } catch (err: any) {
         updateInfo.value = null

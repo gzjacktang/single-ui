@@ -40,8 +40,16 @@ jobs:
             gh release view "v${REQUESTED_VERSION}" --repo SagerNet/sing-box >/dev/null
             versions=$(jq -cn --arg version "$REQUESTED_VERSION" '[$version]')
           else
-            versions=$(gh api 'repos/SagerNet/sing-box/releases?per_page=30' --jq \
-              '[([.[] | select(.draft == false and .prerelease == false)][0].tag_name), ([.[] | select(.draft == false and .prerelease == true)][0].tag_name)] | map(select(. != null) | ltrimstr("v")) | unique')
+            stable=$(gh api repos/SagerNet/sing-box/releases/latest --jq '.tag_name')
+            preview=''
+            page=1
+            while [ -z "$preview" ]; do
+              releases=$(gh api "repos/SagerNet/sing-box/releases?per_page=30&page=$page")
+              preview=$(jq -r '[.[] | select(.draft == false and .prerelease == true)][0].tag_name // empty' <<< "$releases")
+              if [ "$(jq length <<< "$releases")" -lt 30 ]; then break; fi
+              page=$((page + 1))
+            done
+            versions=$(jq -cn --arg stable "$stable" --arg preview "$preview" '[$stable, $preview] | map(select(. != "") | ltrimstr("v")) | unique')
           fi
           echo "versions=$versions" >> "$GITHUB_OUTPUT"
 

@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -175,20 +176,36 @@ func readLimited(body io.Reader, max int64) ([]byte, error) {
 }
 
 func (u *BinaryUpdater) releases(ctx context.Context) ([]coreRelease, error) {
-	resp, err := u.get(ctx, u.releasesURL)
+	base, err := url.Parse(u.releasesURL)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
-	data, err := readLimited(resp.Body, maxReleaseJSON)
-	if err != nil {
-		return nil, err
+	var all []coreRelease
+	for page := 1; ; page++ {
+		if page > 100 {
+			return nil, errors.New("内核版本列表分页超过上限")
+		}
+		query := base.Query()
+		query.Set("page", fmt.Sprint(page))
+		base.RawQuery = query.Encode()
+		resp, err := u.get(ctx, base.String())
+		if err != nil {
+			return nil, err
+		}
+		data, err := readLimited(resp.Body, maxReleaseJSON)
+		resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		var releases []coreRelease
+		if err := json.Unmarshal(data, &releases); err != nil {
+			return nil, fmt.Errorf("解析内核版本失败: %w", err)
+		}
+		all = append(all, releases...)
+		if !strings.Contains(resp.Header.Get("Link"), `rel="next"`) {
+			return all, nil
+		}
 	}
-	var releases []coreRelease
-	if err := json.Unmarshal(data, &releases); err != nil {
-		return nil, fmt.Errorf("解析内核版本失败: %w", err)
-	}
-	return releases, nil
 }
 
 func binaryVersion(ctx context.Context, path string) (string, error) {
@@ -236,13 +253,14 @@ func (u *BinaryUpdater) Check(ctx context.Context) (CoreUpdateInfo, error) {
 		return info, err
 	}
 	latest := newestCoreRelease(releases)
-	if latest == "" {
-		return info, errors.New("没有可用的稳定版内核安装包")
+	versions := availableCoreVersions(releases)
+	if len(versions) == 0 {
+		return info, errors.New("没有可用的内核安装包")
 	}
 	info.CurrentVersion = current
 	info.LatestVersion = latest
-	info.HasUpdate = semver.Compare("v"+latest, "v"+current) > 0
-	info.Versions = availableCoreVersions(releases)
+	info.HasUpdate = latest != "" && semver.Compare("v"+latest, "v"+current) > 0
+	info.Versions = versions
 	return info, nil
 }
 

@@ -130,7 +130,18 @@ fi
 echo -e "${PINK}最新版本: ${RELEASE}${PLAIN}"
 
 step "检测最新 sing-box 核心版本"
-CORE_VERSION=$(curl -fsSL "https://api.github.com/repos/gzjacktang/single-ui/releases?per_page=100" | sed -nE 's/.*"tag_name": *"sing-box-([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p' | sort -V | tail -n 1)
+latest_stable_core() {
+    local page=1 response versions='' stable
+    while true; do
+        response=$(curl -fsSL -D - "https://api.github.com/repos/gzjacktang/single-ui/releases?per_page=100&page=${page}") || return 1
+        stable=$(printf '%s\n' "$response" | sed -nE 's/.*"tag_name": *"sing-box-([0-9]+\.[0-9]+\.[0-9]+)".*/\1/p')
+        versions="${versions}"$'\n'"${stable}"
+        if ! printf '%s\n' "$response" | grep -qi '^link:.*rel="next"'; then break; fi
+        page=$((page + 1))
+    done
+    printf '%s\n' "$versions" | sort -V | tail -n 1
+}
+CORE_VERSION=$(latest_stable_core)
 if [[ -z "$CORE_VERSION" ]]; then
     echo -e "${RED}获取 sing-box 版本号失败${PLAIN}"
     exit 1

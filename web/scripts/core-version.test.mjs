@@ -39,14 +39,33 @@ test('preview must be explicitly enabled and selected', async () => {
 })
 test('fresh installs choose latest stable even after preview or rollback releases are published', () => {
   const installer = readFileSync(new URL('../../install.sh', import.meta.url), 'utf8')
+  const helper = installer.match(/latest_stable_core\(\) \{[\s\S]*?\n\}/)[0]
   const assignment = installer.split('\n').find(line => line.startsWith('CORE_VERSION='))
   const fixture = [
     { tag_name: 'sing-box-1.15.0-alpha.12', prerelease: true },
     { tag_name: 'sing-box-1.13.13' }, { tag_name: 'sing-box-1.14.3' },
   ]
-  const result = spawnSync('bash', ['-c', `curl() { printf '%s' "$CORE_RELEASE_FIXTURE"; }\n${assignment}\nprintf '%s' "$CORE_VERSION"`], {
+  const result = spawnSync('bash', ['-c', `curl() { printf '%s' "$CORE_RELEASE_FIXTURE"; }\n${helper}\n${assignment}\nprintf '%s' "$CORE_VERSION"`], {
     encoding: 'utf8', env: { ...process.env, CORE_RELEASE_FIXTURE: JSON.stringify(fixture, null, 2) },
   })
   assert.equal(result.status, 0, result.stderr)
   assert.equal(result.stdout, '1.14.3')
+})
+
+test('installer finds stable cores on later release pages', () => {
+  const installer = readFileSync(new URL('../../install.sh', import.meta.url), 'utf8')
+  const helper = installer.match(/latest_stable_core\(\) \{[\s\S]*?\n\}/)[0]
+  const result = spawnSync('bash', ['-c', `curl() {
+    case "$*" in
+      *page=2*) printf '%s' "$CORE_STABLE_FIXTURE" ;;
+      *) printf 'Link: <ignored>; rel="next"\\n\\n%s' "$CORE_PREVIEW_FIXTURE" ;;
+    esac
+  }\n${helper}\nlatest_stable_core`], {
+    encoding: 'utf8', env: { ...process.env,
+      CORE_PREVIEW_FIXTURE: JSON.stringify([{ tag_name: 'sing-box-1.15.0-alpha.12' }], null, 2),
+      CORE_STABLE_FIXTURE: JSON.stringify([{ tag_name: 'sing-box-1.14.3' }], null, 2),
+    },
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stdout.trim(), '1.14.3')
 })

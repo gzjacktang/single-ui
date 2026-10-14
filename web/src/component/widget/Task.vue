@@ -41,8 +41,6 @@ watch(() => props.taskId, (id) => {
     const current = generation
     let cursor = 0
     let polling = false
-    let failures = 0
-    let reportedDisconnect = false
     async function poll() {
         if (polling || current !== generation) return
         polling = true
@@ -51,7 +49,6 @@ watch(() => props.taskId, (id) => {
             if (current !== generation) return
             lines.value = [...lines.value, ...status.logs].slice(-1000)
             cursor = status.next
-            failures = 0
             statusError.value = ''
             if (status.done) {
                 stop()
@@ -61,16 +58,11 @@ watch(() => props.taskId, (id) => {
             nextTick(() => outputRef.value?.scrollTo(0, outputRef.value.scrollHeight))
         } catch (err: any) {
             if (current !== generation) return
-            failures++
             statusError.value = err?.error || '任务进度暂时无法连接，正在重试...'
             if (err?.expired) {
                 stop()
                 emit('error')
                 return
-            }
-            if (failures >= 3 && !reportedDisconnect) {
-                reportedDisconnect = true
-                emit('error')
             }
         } finally {
             polling = false
