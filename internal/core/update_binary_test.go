@@ -20,70 +20,112 @@ import (
 )
 
 func TestBinaryUpdaterInstallsVerifiedCore(t *testing.T) {
-	dir := t.TempDir()
-	installed := filepath.Join(dir, "sing-box")
-	config := filepath.Join(dir, "config.json")
-	if err := os.WriteFile(installed, []byte("#!/bin/sh\necho 'sing-box version 1.13.13'\n"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(config, []byte("{}"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	newBinary := []byte("#!/bin/sh\nif [ \"$1\" = version ]; then echo 'sing-box version 1.14.3'; fi\n")
-	var archive bytes.Buffer
-	compressed := gzip.NewWriter(&archive)
-	if _, err := compressed.Write(newBinary); err != nil {
-		t.Fatal(err)
-	}
-	if err := compressed.Close(); err != nil {
-		t.Fatal(err)
-	}
-	sum := sha256.Sum256(archive.Bytes())
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/releases":
-			fmt.Fprint(w, `[{"tag_name":"sing-box-1.14.3"}]`)
-		case "/sing-box-1.14.3/SHA256SUMS":
-			fmt.Fprintf(w, "%x  sing-box_linux_amd64.gz\n", sum)
-		case "/sing-box-1.14.3/sing-box_linux_amd64.gz":
-			w.Write(archive.Bytes())
-		default:
-			http.NotFound(w, r)
-		}
-	}))
-	defer server.Close()
+	for _, tc := range []struct {
+		name, current, target, requested string
+		invalidConfig                    bool
+	}{
+		{name: "latest stable", current: "1.13.13", target: "1.14.3"},
+		{name: "explicit rollback", current: "1.14.3", target: "1.13.13", requested: "1.13.13"},
+		{name: "preview", current: "1.14.3", target: "1.15.0-alpha.12", requested: "1.15.0-alpha.12"},
+		{name: "preview to stable", current: "1.15.0-alpha.12", target: "1.14.3", requested: "1.14.3"},
+		{name: "incompatible rollback", current: "1.14.3", target: "1.13.13", requested: "1.13.13", invalidConfig: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := t.TempDir()
+			installed := filepath.Join(dir, "sing-box")
+			config := filepath.Join(dir, "config.json")
+			oldBinary := []byte(fmt.Sprintf("#!/bin/sh\necho 'sing-box version %s'\n", tc.current))
+			if err := os.WriteFile(installed, oldBinary, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(config, []byte("{}"), 0600); err != nil {
+				t.Fatal(err)
+			}
+			exitCode := 0
+			if tc.invalidConfig {
+				exitCode = 1
+			}
+			newBinary := []byte(fmt.Sprintf("#!/bin/sh\nif [ \"$1\" = version ]; then echo 'sing-box version %s'; exit 0; fi\nexit %d\n", tc.target, exitCode))
+			var archive bytes.Buffer
+			compressed := gzip.NewWriter(&archive)
+			if _, err := compressed.Write(newBinary); err != nil {
+				t.Fatal(err)
+			}
+			if err := compressed.Close(); err != nil {
+				t.Fatal(err)
+			}
+			sum := sha256.Sum256(archive.Bytes())
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/releases":
+					fmt.Fprint(w, `[{"tag_name":"sing-box-1.14.3"},{"tag_name":"sing-box-1.13.13"},{"tag_name":"sing-box-1.15.0-alpha.12","prerelease":true}]`)
+				case "/sing-box-" + tc.target + "/SHA256SUMS":
+					fmt.Fprintf(w, "%x  sing-box_linux_amd64.gz\n", sum)
+				case "/sing-box-" + tc.target + "/sing-box_linux_amd64.gz":
+					w.Write(archive.Bytes())
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			defer server.Close()
 
-	oldDB := database.DB
-	t.Cleanup(func() { database.DB = oldDB })
-	var err error
-	database.DB, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	if err != nil {
-		t.Fatal(err)
+			oldDB := database.DB
+			t.Cleanup(func() { database.DB = oldDB })
+			var err error
+			database.DB, err = gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := database.DB.AutoMigrate(&database.Core{}); err != nil {
+				t.Fatal(err)
+			}
+			if err := database.DB.Create(&database.Core{ID: 1, Name: "sing-box", Version: tc.current}).Error; err != nil {
+				t.Fatal(err)
+			}
+			u := &BinaryUpdater{
+				client: server.Client(), releasesURL: server.URL + "/releases", downloadsURL: server.URL,
+				manager: &Manager{BinPath: installed, ConfigPath: config}, platformOS: "linux", arch: "amd64",
+			}
+			info, err := u.Update(context.Background(), tc.requested)
+			if tc.invalidConfig {
+				if err == nil {
+					t.Fatal("incompatible core was installed")
+				}
+				data, readErr := os.ReadFile(installed)
+				if readErr != nil || !bytes.Equal(data, oldBinary) {
+					t.Fatal("failed config check replaced the old core")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if info.CurrentVersion != tc.target || len(info.Versions) != 3 {
+				t.Fatalf("unexpected update info: %+v", info)
+			}
+			data, err := os.ReadFile(installed)
+			if err != nil || !bytes.Equal(data, newBinary) {
+				t.Fatalf("installed binary = %q, %v", data, err)
+			}
+			var record database.Core
+			if err := database.DB.First(&record, 1).Error; err != nil || record.Version != tc.target {
+				t.Fatalf("stored core version = %q, %v", record.Version, err)
+			}
+		})
 	}
-	if err := database.DB.AutoMigrate(&database.Core{}); err != nil {
-		t.Fatal(err)
-	}
-	if err := database.DB.Create(&database.Core{ID: 1, Name: "sing-box", Version: "1.13.13"}).Error; err != nil {
-		t.Fatal(err)
-	}
-	u := &BinaryUpdater{
-		client: server.Client(), releasesURL: server.URL + "/releases", downloadsURL: server.URL,
-		manager: &Manager{BinPath: installed, ConfigPath: config}, platformOS: "linux", arch: "amd64",
-	}
-	info, err := u.Update(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if info.HasUpdate || info.CurrentVersion != "1.14.3" {
-		t.Fatalf("unexpected update info: %+v", info)
-	}
-	data, err := os.ReadFile(installed)
-	if err != nil || !bytes.Equal(data, newBinary) {
-		t.Fatalf("installed binary = %q, %v", data, err)
-	}
-	var record database.Core
-	if err := database.DB.First(&record, 1).Error; err != nil || record.Version != "1.14.3" {
-		t.Fatalf("stored core version = %q, %v", record.Version, err)
+}
+
+func TestAvailableCoreVersionsIncludesPreviewAndRollback(t *testing.T) {
+	versions := availableCoreVersions([]coreRelease{
+		{TagName: "sing-box-1.13.13"}, {TagName: "sing-box-1.14.3"},
+		{TagName: "sing-box-1.15.0-alpha.12", Prerelease: true},
+		{TagName: "sing-box-1.15.0-alpha.9"},
+		{TagName: "sing-box-1.16.0", Draft: true},
+		{TagName: "sing-box-1.14.3"}, {TagName: "v0.0.16"},
+		{TagName: "sing-box-../../bad"},
+	})
+	if len(versions) != 4 || versions[0].Version != "1.15.0-alpha.12" || !versions[1].Prerelease || versions[3].Version != "1.13.13" {
+		t.Fatalf("unexpected version choices: %+v", versions)
 	}
 }
 
@@ -240,7 +282,7 @@ func TestBinaryUpdaterRejectsConcurrentUpdates(t *testing.T) {
 	u := &BinaryUpdater{}
 	u.mu.Lock()
 	defer u.mu.Unlock()
-	if _, err := u.Update(context.Background()); !errors.Is(err, ErrCoreUpdateBusy) {
+	if _, err := u.Update(context.Background(), ""); !errors.Is(err, ErrCoreUpdateBusy) {
 		t.Fatalf("concurrent update error = %v, want ErrCoreUpdateBusy", err)
 	}
 }

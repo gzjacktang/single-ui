@@ -3,12 +3,24 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/gzjacktang/single-ui/internal/task"
 )
+
+func TaskStatus(c *gin.Context) {
+	c.Header("Cache-Control", "no-store")
+	t := task.Get(c.Param("id"))
+	if t == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "任务不存在或已过期，请刷新列表查看结果", "expired": true})
+		return
+	}
+	after, _ := strconv.Atoi(c.Query("after"))
+	c.JSON(http.StatusOK, t.Snapshot(after))
+}
 
 func TaskLog(c *gin.Context) {
 	id := c.Param("id")

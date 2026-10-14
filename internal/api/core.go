@@ -2,6 +2,7 @@ package api
 
 import (
 	"errors"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -54,7 +55,14 @@ func CheckCoreBinaryUpdate(c *gin.Context) {
 }
 
 func UpdateCoreBinary(c *gin.Context) {
-	info, err := core.DefaultBinaryUpdater.Update(c.Request.Context())
+	var req struct {
+		Version string `json:"version"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "版本参数无效"})
+		return
+	}
+	info, err := core.DefaultBinaryUpdater.Update(c.Request.Context(), req.Version)
 	if err != nil {
 		status := http.StatusInternalServerError
 		if errors.Is(err, core.ErrCoreUpdateBusy) {

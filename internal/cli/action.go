@@ -5,12 +5,14 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/service"
 	"github.com/gzjacktang/single-ui/internal/util"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -152,6 +154,31 @@ func resetCredentials() string {
 		[]string{"用户名", username},
 		[]string{"密码", password},
 	)
+}
+
+func changePanelPort(value string) string {
+	port, err := strconv.Atoi(strings.TrimSpace(value))
+	if err != nil {
+		return renderStatus("面板端口", "请输入 1–65535 之间的整数", false)
+	}
+	db, err := openDB()
+	if err != nil {
+		return renderStatus("面板端口", "数据库读取失败: "+err.Error(), false)
+	}
+	var config database.Config
+	if err := db.First(&config).Error; err != nil {
+		return renderStatus("面板端口", "读取配置失败: "+err.Error(), false)
+	}
+	if err := service.ValidatePanelPort(db, port, config.Port); err != nil {
+		return renderStatus("面板端口", err.Error(), false)
+	}
+	if err := db.Model(&config).Update("port", port).Error; err != nil {
+		return renderStatus("面板端口", "保存失败: "+err.Error(), false)
+	}
+	if err := runCheckedCommand("systemctl", "restart", "slinx"); err != nil {
+		return renderStatus("面板端口", "端口已保存，但重启失败: "+err.Error(), false)
+	}
+	return renderStatus("面板端口", "已保存并重启", true) + "\n" + showLoginInfo()
 }
 
 func showLoginInfo() string {

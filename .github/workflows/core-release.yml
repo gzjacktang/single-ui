@@ -1,0 +1,106 @@
+name: Publish sing-box cores
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Optional sing-box version, e.g. 1.14.3 or 1.15.0-alpha.12; empty builds latest stable and preview'
+        type: string
+        required: false
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sing-box-core-releases
+  cancel-in-progress: false
+
+jobs:
+  versions:
+    if: github.repository == 'gzjacktang/single-ui'
+    runs-on: ubuntu-24.04
+    outputs:
+      versions: ${{ steps.plan.outputs.versions }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REQUESTED_VERSION: ${{ inputs.version }}
+    steps:
+      - name: Select upstream versions
+        id: plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "$REQUESTED_VERSION" ]; then
+            if ! [[ "$REQUESTED_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo 'Invalid sing-box version' >&2
+              exit 1
+            fi
+            gh release view "v${REQUESTED_VERSION}" --repo SagerNet/sing-box >/dev/null
+            versions=$(jq -cn --arg version "$REQUESTED_VERSION" '[$version]')
+          else
+            versions=$(gh api 'repos/SagerNet/sing-box/releases?per_page=30' --jq \
+              '[([.[] | select(.draft == false and .prerelease == false)][0].tag_name), ([.[] | select(.draft == false and .prerelease == true)][0].tag_name)] | map(select(. != null) | ltrimstr("v")) | unique')
+          fi
+          echo "versions=$versions" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: versions
+    runs-on: ubuntu-24.04
+    strategy:
+      max-parallel: 1
+      matrix:
+        version: ${{ fromJSON(needs.versions.outputs.versions) }}
+    env:
+      CORE_VERSION: ${{ matrix.version }}
+      CORE_TAGS: with_v2ray_api,with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_clash_api
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check existing release
+        id: release
+        run: |
+          if gh release view "sing-box-${CORE_VERSION}" >/dev/null 2>&1; then
+            echo 'exists=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'exists=false' >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-go@v6
+        if: steps.release.outputs.exists == 'false'
+        with:
+          go-version-file: go.mod
+          cache: false
+      - name: Build and verify core binaries
+        if: steps.release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch "v${CORE_VERSION}" https://github.com/SagerNet/sing-box.git "$RUNNER_TEMP/sing-box"
+          mkdir -p artifacts
+          for architecture in amd64 arm64; do
+            (
+              cd "$RUNNER_TEMP/sing-box"
+              GOOS=linux GOARCH="$architecture" CGO_ENABLED=0 \
+                go build -trimpath -tags "$CORE_TAGS" \
+                -ldflags="-s -w -X github.com/sagernet/sing-box/constant.Version=${CORE_VERSION}" \
+                -o "$GITHUB_WORKSPACE/artifacts/sing-box_linux_${architecture}" ./cmd/sing-box
+            )
+          done
+          artifacts/sing-box_linux_amd64 version
+          artifacts/sing-box_linux_amd64 check -c .github/core-check.json
+          gzip -n -9 artifacts/sing-box_linux_amd64 artifacts/sing-box_linux_arm64
+          gzip -t artifacts/sing-box_linux_amd64.gz artifacts/sing-box_linux_arm64.gz
+          (cd artifacts && sha256sum sing-box_linux_*.gz > SHA256SUMS)
+      - name: Publish version
+        if: steps.release.outputs.exists == 'false'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if gh release view "sing-box-${CORE_VERSION}" >/dev/null 2>&1; then exit 0; fi
+          prerelease=false
+          if [[ "$CORE_VERSION" == *-* ]]; then prerelease=true; fi
+          gh release create "sing-box-${CORE_VERSION}" artifacts/sing-box_linux_*.gz artifacts/SHA256SUMS \
+            --target "$GITHUB_SHA" --title "sing-box ${CORE_VERSION}" --latest=false --prerelease="$prerelease" \
+            --notes "Built from SagerNet/sing-box v${CORE_VERSION} with the panel's required build tags. Select this version in the SBOX core settings to install or roll back."

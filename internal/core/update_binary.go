@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -35,14 +36,42 @@ const (
 )
 
 var (
-	coreVersionPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
+	coreVersionPattern = regexp.MustCompile(`^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$`)
 	ErrCoreUpdateBusy  = errors.New("内核更新正在进行中")
 )
 
 type CoreUpdateInfo struct {
-	CurrentVersion string `json:"current_version"`
-	LatestVersion  string `json:"latest_version"`
-	HasUpdate      bool   `json:"has_update"`
+	CurrentVersion string        `json:"current_version"`
+	LatestVersion  string        `json:"latest_version"`
+	HasUpdate      bool          `json:"has_update"`
+	Versions       []CoreVersion `json:"versions"`
+}
+
+type CoreVersion struct {
+	Version    string `json:"version"`
+	Prerelease bool   `json:"prerelease"`
+}
+
+func validCoreVersion(version string) bool {
+	return coreVersionPattern.MatchString(version) && semver.IsValid("v"+version)
+}
+
+func availableCoreVersions(releases []coreRelease) []CoreVersion {
+	versions := []CoreVersion{}
+	seen := map[string]bool{}
+	for _, release := range releases {
+		if release.Draft || !strings.HasPrefix(release.TagName, "sing-box-") {
+			continue
+		}
+		version := strings.TrimPrefix(release.TagName, "sing-box-")
+		if !validCoreVersion(version) || seen[version] {
+			continue
+		}
+		seen[version] = true
+		versions = append(versions, CoreVersion{Version: version, Prerelease: release.Prerelease || semver.Prerelease("v"+version) != ""})
+	}
+	sort.Slice(versions, func(i, j int) bool { return semver.Compare("v"+versions[i].Version, "v"+versions[j].Version) > 0 })
+	return versions
 }
 
 type coreRelease struct {
@@ -90,7 +119,7 @@ func newestCoreRelease(releases []coreRelease) string {
 			continue
 		}
 		version := strings.TrimPrefix(release.TagName, "sing-box-")
-		if !coreVersionPattern.MatchString(version) {
+		if !validCoreVersion(version) || semver.Prerelease("v"+version) != "" {
 			continue
 		}
 		if latest == "" || semver.Compare("v"+version, "v"+latest) > 0 {
@@ -145,25 +174,21 @@ func readLimited(body io.Reader, max int64) ([]byte, error) {
 	return data, nil
 }
 
-func (u *BinaryUpdater) latestVersion(ctx context.Context) (string, error) {
+func (u *BinaryUpdater) releases(ctx context.Context) ([]coreRelease, error) {
 	resp, err := u.get(ctx, u.releasesURL)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer resp.Body.Close()
 	data, err := readLimited(resp.Body, maxReleaseJSON)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	var releases []coreRelease
 	if err := json.Unmarshal(data, &releases); err != nil {
-		return "", fmt.Errorf("解析内核版本失败: %w", err)
+		return nil, fmt.Errorf("解析内核版本失败: %w", err)
 	}
-	latest := newestCoreRelease(releases)
-	if latest == "" {
-		return "", errors.New("没有可用的稳定版内核安装包")
-	}
-	return latest, nil
+	return releases, nil
 }
 
 func binaryVersion(ctx context.Context, path string) (string, error) {
@@ -178,7 +203,7 @@ func binaryVersion(ctx context.Context, path string) (string, error) {
 		return "", errors.New("内核版本输出格式无效")
 	}
 	version := strings.TrimPrefix(fields[2], "v")
-	if !coreVersionPattern.MatchString(version) {
+	if !validCoreVersion(version) {
 		return "", fmt.Errorf("内核版本号无效: %s", version)
 	}
 	return version, nil
@@ -206,13 +231,18 @@ func (u *BinaryUpdater) Check(ctx context.Context) (CoreUpdateInfo, error) {
 	if err != nil {
 		return info, err
 	}
-	latest, err := u.latestVersion(ctx)
+	releases, err := u.releases(ctx)
 	if err != nil {
 		return info, err
+	}
+	latest := newestCoreRelease(releases)
+	if latest == "" {
+		return info, errors.New("没有可用的稳定版内核安装包")
 	}
 	info.CurrentVersion = current
 	info.LatestVersion = latest
 	info.HasUpdate = semver.Compare("v"+latest, "v"+current) > 0
+	info.Versions = availableCoreVersions(releases)
 	return info, nil
 }
 
@@ -334,7 +364,7 @@ func replaceCoreBinary(installed, candidate string, wasRunning bool, restart fun
 	return nil
 }
 
-func (u *BinaryUpdater) Update(ctx context.Context) (CoreUpdateInfo, error) {
+func (u *BinaryUpdater) Update(ctx context.Context, target string) (CoreUpdateInfo, error) {
 	var info CoreUpdateInfo
 	if !u.mu.TryLock() {
 		return info, ErrCoreUpdateBusy
@@ -345,8 +375,27 @@ func (u *BinaryUpdater) Update(ctx context.Context) (CoreUpdateInfo, error) {
 	}
 	var err error
 	info, err = u.Check(ctx)
-	if err != nil || !info.HasUpdate {
+	if err != nil {
 		return info, err
+	}
+	if target == "" {
+		if !info.HasUpdate {
+			return info, nil
+		}
+		target = info.LatestVersion
+	}
+	found := false
+	for _, version := range info.Versions {
+		if version.Version == target {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return info, fmt.Errorf("版本 %q 没有可用的项目内核安装包，请刷新版本列表", target)
+	}
+	if target == info.CurrentVersion {
+		return info, nil
 	}
 	installed, err := installedCorePath(u.manager.BinPath)
 	if err != nil {
@@ -357,7 +406,7 @@ func (u *BinaryUpdater) Update(ctx context.Context) (CoreUpdateInfo, error) {
 		return info, err
 	}
 	defer os.RemoveAll(workDir)
-	candidate, err := u.downloadCandidate(ctx, workDir, info.LatestVersion)
+	candidate, err := u.downloadCandidate(ctx, workDir, target)
 	if err != nil {
 		return info, err
 	}
@@ -365,7 +414,7 @@ func (u *BinaryUpdater) Update(ctx context.Context) (CoreUpdateInfo, error) {
 	if err != nil {
 		return info, fmt.Errorf("下载的内核无法执行: %w", err)
 	}
-	if candidateVersion != info.LatestVersion {
+	if candidateVersion != target {
 		return info, fmt.Errorf("下载的内核版本与发布版本不一致: %s", candidateVersion)
 	}
 	checkCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
@@ -376,8 +425,8 @@ func (u *BinaryUpdater) Update(ctx context.Context) (CoreUpdateInfo, error) {
 	if err := replaceCoreBinary(installed, candidate, u.manager.Status() == "running", u.restart); err != nil {
 		return info, err
 	}
-	info.CurrentVersion = info.LatestVersion
-	info.HasUpdate = false
+	info.CurrentVersion = target
+	info.HasUpdate = semver.Compare("v"+info.LatestVersion, "v"+target) > 0
 	if err := database.DB.Model(&database.Core{}).Where("id = 1").Update("version", info.CurrentVersion).Error; err != nil {
 		util.Warn("[core] 内核已更新，但记录版本失败: %v", err)
 	}

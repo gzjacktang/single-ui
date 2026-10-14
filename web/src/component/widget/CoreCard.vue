@@ -12,6 +12,11 @@
         </div>
         <p v-if="updateInfo?.has_update" class="update-hint">可更新至 sing-box {{ updateInfo.latest_version }}</p>
         <p v-else-if="checkError" class="update-hint error">{{ checkError }}</p>
+        <div class="version-picker">
+            <label class="preview-toggle"><input v-model="includePreview" type="checkbox" :disabled="updating" />显示预览版</label>
+            <Select v-model="selectedVersion" :options="versionOptions" :disabled="checking || updating" placeholder="选择内核版本" />
+            <p v-if="selectedIsPreview" class="preview-hint">预览版可能不稳定；安装前会检查当前配置，检查失败时保留现有内核。</p>
+        </div>
         <div class="actions">
             <button class="action-btn" :disabled="updating" @click="status === 'running' ? handleStop() : handleStart()">
                 <i class="icon">power_settings_new</i>
@@ -25,9 +30,9 @@
                 <i class="icon">search</i>
                 {{ checking ? '检查中' : '检查更新' }}
             </button>
-            <button class="action-btn" :disabled="!updateInfo?.has_update || updating" @click="handleUpdate">
+            <button class="action-btn" :disabled="!canInstall || updating" @click="handleUpdate">
                 <i class="icon">system_update_alt</i>
-                {{ updating ? '更新中' : updateInfo?.has_update ? '更新内核' : updateInfo ? '已是最新' : '暂不可用' }}
+                {{ updating ? '安装中' : selectedVersion === updateInfo?.current_version ? '当前版本' : '安装所选版本' }}
             </button>
         </div>
     </div>
@@ -35,6 +40,7 @@
 
 <script setup lang="ts">
 import Status from '@/component/ui/Status.vue'
+import Select from '@/component/ui/Select.vue'
 import { getCore, getCoreStatus, stopCore, startCore, restartCore, checkCoreUpdate, updateCoreBinary, type CoreUpdateInfo } from '@/api/core'
 
 const modal = inject<any>('modal')
@@ -44,6 +50,19 @@ const updateInfo = ref<CoreUpdateInfo | null>(null)
 const checking = ref(false)
 const updating = ref(false)
 const checkError = ref('')
+const includePreview = ref(false)
+const selectedVersion = ref('')
+const versionOptions = computed(() => (updateInfo.value?.versions || [])
+    .filter(version => includePreview.value || !version.prerelease)
+    .map(version => ({ value: version.version, label: `${version.version}${version.prerelease ? ' · 预览版' : ' · 稳定版'}${version.version === updateInfo.value?.current_version ? ' · 当前' : ''}` })))
+const selectedIsPreview = computed(() => updateInfo.value?.versions.some(version => version.version === selectedVersion.value && version.prerelease))
+const canInstall = computed(() => selectedVersion.value && selectedVersion.value !== updateInfo.value?.current_version
+    && versionOptions.value.some(option => option.value === selectedVersion.value))
+watch(versionOptions, options => {
+    if (!options.some(option => option.value === selectedVersion.value)) {
+        selectedVersion.value = options.find(option => option.value === updateInfo.value?.latest_version)?.value || options[0]?.value || ''
+    }
+})
 let timer: ReturnType<typeof setInterval> | undefined
 
 async function fetch() {
@@ -99,13 +118,14 @@ async function confirmInstalled(version: string) {
 }
 
 function handleUpdate() {
-    if (!updateInfo.value?.has_update || updating.value) return
-    const target = updateInfo.value.latest_version
-    modal.value?.show('confirm', `确认将 sing-box 内核更新至 ${target}？更新时节点会短暂中断。`, async () => {
+    if (!canInstall.value || updating.value) return
+    const target = selectedVersion.value
+    const previewWarning = selectedIsPreview.value ? '\n这是预览版，可能存在兼容性问题。' : ''
+    modal.value?.show('confirm', `确认将 sing-box 内核切换至 ${target}？切换时节点会短暂中断，可通过版本列表回退。${previewWarning}`, async () => {
         updating.value = true
         modal.value?.show('warn', '正在下载、校验并更新内核...')
         try {
-            updateInfo.value = await updateCoreBinary()
+            updateInfo.value = await updateCoreBinary(target)
             await fetch()
             modal.value?.show('success', `内核已更新至 ${updateInfo.value.current_version}`)
         } catch (err: any) {
@@ -159,6 +179,15 @@ onUnmounted(() => { if (timer) clearInterval(timer) })
     font-size: var(--font-size-sm);
 
     &.error { color: var(--color-red); }
+}
+
+.version-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+    .preview-toggle { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-sm); }
+    .preview-hint { margin: 0; color: var(--color-primary); font-size: var(--font-size-sm); }
 }
 
 .actions {

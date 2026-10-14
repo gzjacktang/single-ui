@@ -21,6 +21,7 @@ type item struct {
 	divider          bool
 	selectable       bool
 	confirmUninstall bool
+	editPort         bool
 }
 
 func (it item) getLabel() string {
@@ -37,6 +38,9 @@ type model struct {
 	output              string
 	loading             bool
 	confirmingUninstall bool
+	editingPort         bool
+	portInput           string
+	portAction          func(string) string
 }
 
 func (m model) Init() tea.Cmd {
@@ -51,6 +55,33 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case tea.KeyMsg:
 		if m.loading {
+			return m, nil
+		}
+		if m.editingPort {
+			switch msg.String() {
+			case "ctrl+c":
+				return m, tea.Quit
+			case "esc":
+				m.editingPort = false
+				m.output = "已取消修改端口"
+			case "backspace":
+				if len(m.portInput) > 0 {
+					m.portInput = m.portInput[:len(m.portInput)-1]
+				}
+			case "enter":
+				m.editingPort = false
+				action := m.portAction
+				if action == nil {
+					action = changePanelPort
+				}
+				m.output = action(m.portInput)
+			default:
+				for _, r := range msg.Runes {
+					if r >= '0' && r <= '9' && len(m.portInput) < 5 {
+						m.portInput += string(r)
+					}
+				}
+			}
 			return m, nil
 		}
 		if m.confirmingUninstall {
@@ -88,6 +119,12 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if m.items[m.cursor].confirmUninstall {
 				m.confirmingUninstall = true
+				m.output = ""
+				return m, nil
+			}
+			if m.items[m.cursor].editPort {
+				m.editingPort = true
+				m.portInput = ""
 				m.output = ""
 				return m, nil
 			}
@@ -151,7 +188,9 @@ func (m model) View() string {
 	}
 
 	result := strings.Join(renderedLines, "\n") + "\n"
-	if m.confirmingUninstall {
+	if m.editingPort {
+		result += renderInfo("修改面板端口", []string{"输入新端口（1–65535），回车保存并重启，Esc 取消。"}, []string{"请先在防火墙放行新端口。"}, []string{"新端口", m.portInput + "_"}) + "\n"
+	} else if m.confirmingUninstall {
 		result += renderInfo("确认彻底卸载", []string{
 			"将永久删除 /etc/slinx 下的数据库、证书和全部面板配置。",
 			"按 y 确认，其他按键取消。",
@@ -185,6 +224,7 @@ func Start(version string) {
 		}, selectable: true, action: func() string { return toggleAutoRestart() }},
 		{divider: true},
 		{label: "重置面板地址", selectable: true, action: func() string { return resetUrl() }},
+		{label: "修改面板端口", selectable: true, editPort: true},
 		{label: "重置用户名&密码", selectable: true, action: func() string { return resetCredentials() }},
 		{label: "查看登录信息", selectable: true, action: func() string { return showLoginInfo() }},
 		{divider: true},

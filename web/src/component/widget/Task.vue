@@ -1,6 +1,7 @@
 <template>
-    <div class="task" v-if="lines.length">
+    <div class="task" v-if="lines.length || statusError">
         <div class="output" ref="outputRef">
+            <div v-if="statusError" class="message">{{ statusError }}</div>
             <div class="line" v-for="(line, i) in lines" :key="i">
                 <div class="meta">
                     <span class="time">{{ line.time }}</span>
@@ -13,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { task } from '@/api/task'
+import { getTaskStatus } from '@/api/task'
 
 const props = defineProps<{ taskId: string }>()
 const emit = defineEmits<{ done: [], error: [] }>()
@@ -22,29 +23,64 @@ interface LogLine { time: string; level: string; message: string }
 
 const lines = ref<LogLine[]>([])
 const outputRef = ref<HTMLElement>()
+const statusError = ref('')
+let timer: ReturnType<typeof setInterval> | undefined
+let generation = 0
+
+function stop() {
+    generation++
+    if (timer) clearInterval(timer)
+    timer = undefined
+}
 
 watch(() => props.taskId, (id) => {
+    stop()
     if (!id) return
     lines.value = []
-    const ws = task(id)
-    ws.onmessage = (e) => {
-        const line = JSON.parse(e.data) as LogLine
-        if (line.level === 'DONE') {
-            emit('done')
-            ws.close()
-            return
+    statusError.value = ''
+    const current = generation
+    let cursor = 0
+    let polling = false
+    let failures = 0
+    let reportedDisconnect = false
+    async function poll() {
+        if (polling || current !== generation) return
+        polling = true
+        try {
+            const status = await getTaskStatus(id, cursor)
+            if (current !== generation) return
+            lines.value = [...lines.value, ...status.logs].slice(-1000)
+            cursor = status.next
+            failures = 0
+            statusError.value = ''
+            if (status.done) {
+                stop()
+                if (status.error) emit('error')
+                else emit('done')
+            }
+            nextTick(() => outputRef.value?.scrollTo(0, outputRef.value.scrollHeight))
+        } catch (err: any) {
+            if (current !== generation) return
+            failures++
+            statusError.value = err?.error || '任务进度暂时无法连接，正在重试...'
+            if (err?.expired) {
+                stop()
+                emit('error')
+                return
+            }
+            if (failures >= 3 && !reportedDisconnect) {
+                reportedDisconnect = true
+                emit('error')
+            }
+        } finally {
+            polling = false
         }
-        lines.value.push(line)
-        if (line.level === 'ERROR') {
-            emit('error')
-            ws.close()
-            return
-        }
-        nextTick(() => {
-            outputRef.value?.scrollTo(0, outputRef.value.scrollHeight)
-        })
     }
+    timer = setInterval(poll, 1500)
+    poll()
 }, { immediate: true })
+
+onUnmounted(stop)
 </script>
 
 <style scoped>

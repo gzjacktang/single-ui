@@ -13,6 +13,9 @@
             <Row title="当前面板地址" subtitle="备注">
               <label>{{ panelUrl }}</label>
             </Row>
+            <Row title="访问端口" subtitle="保存并重启后生效，请确保新端口已在防火墙放行">
+              <Input v-model="Config.Port" type="number" :min="1" :max="65535" placeholder="1–65535" />
+            </Row>
             <Row title="域名" subtitle="选择证书域名，设置后自动启用HTTPS">
               <Select v-model="Config.Domain" :options="domainOptions" placeholder="选择域名" />
             </Row>
@@ -105,6 +108,7 @@ import { getConfig, updateConfig, resetConfig, Log as log } from '@/api/config'
 import { getCert } from '@/api/cert'
 import { changeCredentials } from '@/api/auth'
 import { restartPanel } from '@/api/bootstrap'
+import { panelAddress } from '@/util/panelAddress'
 
 // Store
 import { loadConfig } from '@/store/config'
@@ -133,12 +137,7 @@ const domainOptions = computed(() => [
   ...certs.value.map((c) => ({ label: c.Domain, value: c.Domain })),
 ])
 
-const panelUrl = computed(() => {
-  const origin = Config.value.Domain
-    ? `https://${Config.value.Domain}:${Config.value.Port}`
-    : window.location.origin
-  return `${origin}${Config.value.Path || ''}`
-})
+const panelUrl = computed(() => panelAddress(Config.value))
 
 const logLevelOptions = [
   { label: 'INFO', value: 'info' },
@@ -179,10 +178,7 @@ async function restart() {
   try {
     modal.value?.show('warn', '准备重启...')
     const config = await getConfig()
-    const origin = config.Domain
-      ? `https://${config.Domain}:${config.Port}`
-      : window.location.origin
-    const url = `${origin}${config.Path}/login`
+    const url = panelAddress(config, true)
 
     let count = 3
     const jump = () => {
@@ -209,7 +205,7 @@ async function restart() {
 async function reset() {
   modal.value?.show(
     'confirm',
-    '确认重置面板选项？\n\n访问地址、管理员凭据和安装时设定的监听端口保持不变。',
+    '确认重置面板选项？\n\n访问地址、管理员凭据和当前监听端口保持不变。',
     async () => {
       await resetConfig()
       Config.value = await getConfig()

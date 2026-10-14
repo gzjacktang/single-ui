@@ -34,6 +34,7 @@ func TestCoreUpdateRoutesStayUnderPanelPath(t *testing.T) {
 	want := map[string]bool{
 		"GET /private/admin/panel/api/core/update/check": false,
 		"POST /private/admin/panel/api/core/update":      false,
+		"GET /private/admin/panel/api/task/:id/status":   false,
 	}
 	for _, route := range router.Routes() {
 		key := route.Method + " " + route.Path
@@ -52,6 +53,7 @@ func TestCoreUpdateRoutesStayUnderPanelPath(t *testing.T) {
 	for _, target := range []struct{ method, path string }{
 		{http.MethodGet, "/private/admin/panel/api/core/update/check"},
 		{http.MethodPost, "/private/admin/panel/api/core/update"},
+		{http.MethodGet, "/private/admin/panel/api/task/example/status"},
 	} {
 		response := httptest.NewRecorder()
 		request := httptest.NewRequest(target.method, target.path, nil)

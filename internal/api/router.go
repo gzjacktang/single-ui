@@ -112,6 +112,7 @@ func RegisterRoutes(r *gin.Engine, panelPath string) {
 
 		// 推送
 		private.GET("/task/:id", TaskLog)
+		private.GET("/task/:id/status", TaskStatus)
 
 		// 快速
 		private.POST("/quick", Quick)

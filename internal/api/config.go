@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gzjacktang/single-ui/internal/database"
+	"github.com/gzjacktang/single-ui/internal/service"
 	"github.com/gzjacktang/single-ui/internal/util"
 )
 
@@ -31,6 +32,10 @@ func UpdateConfig(c *gin.Context) {
 		return
 	}
 	req.Path = path
+	if err := service.ValidatePanelPort(database.DB, req.Port, prev.Port); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 
 	if req.LogPath != "" && !strings.HasSuffix(req.LogPath, ".log") {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "日志路径必须以 .log 结尾"})
@@ -41,7 +46,6 @@ func UpdateConfig(c *gin.Context) {
 	req.Username = prev.Username
 	req.Password = prev.Password
 	req.SecretKey = prev.SecretKey
-	req.Port = prev.Port
 	req.IPv4 = prev.IPv4
 	req.IPv6 = prev.IPv6
 	req.StartedAt = prev.StartedAt
@@ -50,7 +54,10 @@ func UpdateConfig(c *gin.Context) {
 	req.SubPath = ""
 	req.SubPort = 0
 	req.BoardEnable = false
-	database.DB.Save(&req)
+	if err := database.DB.Save(&req).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "保存面板配置失败"})
+		return
+	}
 
 	util.InitLog(req.LogPath, req.LogLevel, req.LogEnable)
 

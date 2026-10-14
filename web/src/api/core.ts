@@ -13,10 +13,11 @@ export interface CoreUpdateInfo {
   current_version: string
   latest_version: string
   has_update: boolean
+  versions: Array<{ version: string; prerelease: boolean }>
 }
 export const checkCoreUpdate = (): Promise<CoreUpdateInfo> => request('/api/core/update/check')
-export const updateCoreBinary = (): Promise<CoreUpdateInfo> =>
-  request('/api/core/update', { method: 'POST' })
+export const updateCoreBinary = (version: string): Promise<CoreUpdateInfo> =>
+  request('/api/core/update', { method: 'POST', body: JSON.stringify({ version }) })
 export const startCore = () => request('/api/core/start', { method: 'POST' })
 export const stopCore = () => request('/api/core/stop', { method: 'POST' })
 export const restartCore = () => request('/api/core/restart', { method: 'POST' })

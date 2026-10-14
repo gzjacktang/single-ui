@@ -85,14 +85,14 @@
             :dns-list="dnsList"
             :form-mode="certFormMode"
         />
-        <Task v-if="certTask.id" :task-id="certTask.id" @done="onCertTaskDone" @error="onCertTaskError" />
+        <Task v-if="showCertDrawer && certTask.id" :task-id="certTask.id" @done="onCertTaskDone" @error="onCertTaskError" />
     </Drawer>
     <Drawer v-model="showCertDetailDrawer" title="证书详情" :footer="false">
         <CertDetail :cert="selectedCert" />
     </Drawer>
     <Drawer v-model="showAcmeDrawer" title="ACME 账号" :loading="acmeTask.loading" :done="acmeTask.done" @save="saveAcmeForm">
         <AcmeForm v-model="acmeForm" />
-        <Task v-if="acmeTask.id" :task-id="acmeTask.id" @done="onAcmeTaskDone" @error="onAcmeTaskError" />
+        <Task v-if="showAcmeDrawer && acmeTask.id" :task-id="acmeTask.id" @done="onAcmeTaskDone" @error="onAcmeTaskError" />
     </Drawer>
     <Drawer v-model="showDnsDrawer" title="DNS 账号" @save="saveDnsForm">
         <DnsForm v-model="dnsForm" />
@@ -132,17 +132,23 @@ const certTask = ref({
     id: '',
 })
 
-function onCertTaskDone() {
+async function onCertTaskDone() {
     certTask.value.loading = false
     certTask.value.done = true
-    loadCert()
-    emit('changed')
+    showCertDrawer.value = false
+    try {
+        await loadCert()
+        emit('changed')
+        modal.value?.show('success', '证书申请成功')
+    } catch {
+        modal.value?.show('success', '证书申请成功，列表暂时无法刷新，请稍后重新打开证书页面')
+    }
 }
 
 function onCertTaskError() {
     certTask.value.loading = false
     certTask.value.done = false
-    loadCert()
+    loadCert().catch(() => {})
 }
 
 // ── ACME 任务 ─────────────────────────────────────────────
@@ -156,13 +162,13 @@ const acmeTask = ref({
 function onAcmeTaskDone() {
     acmeTask.value.loading = false
     acmeTask.value.done = true
-    loadAcme()
+    loadAcme().catch(() => {})
 }
 
 function onAcmeTaskError() {
     acmeTask.value.loading = false
     acmeTask.value.done = false
-    loadAcme()
+    loadAcme().catch(() => {})
 }
 
 // ── 加载 ──────────────────────────────────────────────────
@@ -228,17 +234,19 @@ async function openCertDrawer(mode: 'add' | 'edit' | 'reapply', cert?: any) {
 }
 
 async function startApply(id: number) {
+    certTask.value.loading = true
     certTask.value.id = ''
     await nextTick()
     try {
         const res = await applyCert(id)
+        if (!res.task_id) throw new Error('未收到证书任务编号')
         if (res.task_id) {
             certTask.value.loading = true
             certTask.value.done = false
             certTask.value.id = res.task_id
         }
     } catch (err: any) {
-        modal.value?.show('error', err?.error)
+        modal.value?.show('error', err?.error || err?.message || '证书申请启动失败')
         certTask.value.loading = false
     }
 }
