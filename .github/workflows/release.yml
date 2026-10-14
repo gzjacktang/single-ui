@@ -17,7 +17,6 @@ jobs:
     if: github.repository == 'gzjacktang/single-ui'
     runs-on: ubuntu-24.04
     env:
-      CORE_VERSION: 1.13.13
       CORE_TAGS: with_v2ray_api,with_gvisor,with_quic,with_dhcp,with_wireguard,with_utls,with_clash_api
       GH_REPO: ${{ github.repository }}
       GH_TOKEN: ${{ github.token }}
@@ -31,6 +30,9 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
+
+      - name: Select sing-box core version from go.mod
+        run: echo "CORE_VERSION=$(go list -m -f '{{.Version}}' github.com/sagernet/sing-box | sed 's/^v//')" >> "$GITHUB_ENV"
 
       - name: Install Linux cross compiler
         run: |
