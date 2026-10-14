@@ -37,6 +37,8 @@ func RegisterRoutes(r *gin.Engine, panelPath string) {
 		private.PUT("/core", UpdateCore)
 		private.POST("/core/reset", ResetCore)
 		private.GET("/core/status", GetCoreStatus)
+		private.GET("/core/update/check", CheckCoreBinaryUpdate)
+		private.POST("/core/update", UpdateCoreBinary)
 		private.POST("/core/start", StartCore)
 		private.POST("/core/stop", StopCore)
 		private.POST("/core/restart", RestartCore)

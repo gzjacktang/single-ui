@@ -1,6 +1,7 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -10,9 +11,9 @@ import (
 )
 
 func GetCore(c *gin.Context) {
-	var core database.Core
-	database.DB.First(&core)
-	c.JSON(http.StatusOK, core)
+	var record database.Core
+	database.DB.First(&record)
+	c.JSON(http.StatusOK, record)
 }
 
 func UpdateCore(c *gin.Context) {
@@ -41,6 +42,28 @@ func GetCoreStatus(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"status": core.Default.Status(),
 	})
+}
+
+func CheckCoreBinaryUpdate(c *gin.Context) {
+	info, err := core.DefaultBinaryUpdater.Check(c.Request.Context())
+	if err != nil {
+		c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, info)
+}
+
+func UpdateCoreBinary(c *gin.Context) {
+	info, err := core.DefaultBinaryUpdater.Update(c.Request.Context())
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, core.ErrCoreUpdateBusy) {
+			status = http.StatusConflict
+		}
+		c.JSON(status, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(http.StatusOK, info)
 }
 
 func StartCore(c *gin.Context) {

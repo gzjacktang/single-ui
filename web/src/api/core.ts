@@ -9,6 +9,14 @@ export const updateCore = (data: any) =>
 export const resetCore = () => request('/api/core/reset', { method: 'POST' })
 
 export const getCoreStatus = () => request('/api/core/status')
+export interface CoreUpdateInfo {
+  current_version: string
+  latest_version: string
+  has_update: boolean
+}
+export const checkCoreUpdate = (): Promise<CoreUpdateInfo> => request('/api/core/update/check')
+export const updateCoreBinary = (): Promise<CoreUpdateInfo> =>
+  request('/api/core/update', { method: 'POST' })
 export const startCore = () => request('/api/core/start', { method: 'POST' })
 export const stopCore = () => request('/api/core/stop', { method: 'POST' })
 export const restartCore = () => request('/api/core/restart', { method: 'POST' })
