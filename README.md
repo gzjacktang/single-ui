@@ -116,24 +116,6 @@ AnyTLS 可使用 TLS 或 Reality，但不支持 VLESS 专用的 Vision Flow。An
 
 计划支持：ShadowTLS
 
-## 多语言支持
-
-当前支持：简体中文
-
-v3 版本计划支持：繁体中文、English、Русский、فارسی
-
-## 鸣谢
-
-- [sing-box](https://github.com/SagerNet/sing-box) — 核心代理引擎
-- [3x-ui](https://github.com/MHSanaei/3x-ui) — UI 界面设计借鉴
-- [Loyalsoldier](https://github.com/Loyalsoldier/clash-rules) — Clash 规则集
-- [ACL4SSR](https://github.com/ACL4SSR/ACL4SSR) — Clash 规则集
-- [Claude](https://claude.ai) — AI 编程助手，本项目大量代码由 Claude 协助完成
-
-## 友情链接
-
-- [LINUX DO](https://linux.do)
-
 ## License
 
 [MIT](LICENSE)
