@@ -20,6 +20,8 @@ import (
 )
 
 func TestBinaryUpdaterInstallsVerifiedCore(t *testing.T) {
+	t.Setenv("GODEBUG", "http2client=0,multipathtcp=1")
+	environmentGuard := "if [ \"$GODEBUG\" != 'http2client=0,multipathtcp=0' ]; then echo 'unsafe core environment'; exit 1; fi\n"
 	for _, tc := range []struct {
 		name, current, target, requested string
 		invalidConfig                    bool
@@ -34,7 +36,7 @@ func TestBinaryUpdaterInstallsVerifiedCore(t *testing.T) {
 			dir := t.TempDir()
 			installed := filepath.Join(dir, "sing-box")
 			config := filepath.Join(dir, "config.json")
-			oldBinary := []byte(fmt.Sprintf("#!/bin/sh\necho 'sing-box version %s'\n", tc.current))
+			oldBinary := []byte(fmt.Sprintf("#!/bin/sh\n%secho 'sing-box version %s'\n", environmentGuard, tc.current))
 			if err := os.WriteFile(installed, oldBinary, 0755); err != nil {
 				t.Fatal(err)
 			}
@@ -45,7 +47,7 @@ func TestBinaryUpdaterInstallsVerifiedCore(t *testing.T) {
 			if tc.invalidConfig {
 				exitCode = 1
 			}
-			newBinary := []byte(fmt.Sprintf("#!/bin/sh\nif [ \"$1\" = version ]; then echo 'sing-box version %s'; exit 0; fi\nexit %d\n", tc.target, exitCode))
+			newBinary := []byte(fmt.Sprintf("#!/bin/sh\n%sif [ \"$1\" = version ]; then echo 'sing-box version %s'; exit 0; fi\nexit %d\n", environmentGuard, tc.target, exitCode))
 			var archive bytes.Buffer
 			compressed := gzip.NewWriter(&archive)
 			if _, err := compressed.Write(newBinary); err != nil {

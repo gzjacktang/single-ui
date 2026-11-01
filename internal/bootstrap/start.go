@@ -29,6 +29,7 @@ func Start() {
 
 	// ── 3. 初始化日志 ────────────────────────────────────────────────────────
 	util.InitLog(config.LogPath, config.LogLevel, config.LogEnable)
+	util.Info("[security] 已禁用面板及托管核心的默认 MPTCP；仍需安装 Linux 内核安全更新")
 	if executable, err := os.Executable(); err == nil && filepath.Clean(executable) == "/etc/slinx/slinx" {
 		if err := util.EnsureSboxCommand("/usr/local/bin"); err != nil {
 			util.Error("[bootstrap] 注册 sbox 管理命令失败: %v", err)

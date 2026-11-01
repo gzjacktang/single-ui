@@ -197,6 +197,7 @@ Group=root
 Type=simple
 LimitNOFILE=999999
 WorkingDirectory=$SLINX_DIR
+Environment="GODEBUG=multipathtcp=0"
 ExecStart=$SLINX_DIR/slinx
 Restart=on-failure
 RestartSec=5

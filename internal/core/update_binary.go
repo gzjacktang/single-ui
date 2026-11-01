@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -211,7 +210,7 @@ func (u *BinaryUpdater) releases(ctx context.Context) ([]coreRelease, error) {
 func binaryVersion(ctx context.Context, path string) (string, error) {
 	cmdCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
 	defer cancel()
-	out, err := exec.CommandContext(cmdCtx, path, "version").Output()
+	out, err := coreCommand(cmdCtx, path, "version").Output()
 	if err != nil {
 		return "", fmt.Errorf("读取内核版本失败: %w", err)
 	}
@@ -415,6 +414,9 @@ func (u *BinaryUpdater) Update(ctx context.Context, target string) (CoreUpdateIn
 	if target == info.CurrentVersion {
 		return info, nil
 	}
+	if err := u.manager.checkNetworkPolicy(); err != nil {
+		return info, err
+	}
 	installed, err := installedCorePath(u.manager.BinPath)
 	if err != nil {
 		return info, err
@@ -437,7 +439,7 @@ func (u *BinaryUpdater) Update(ctx context.Context, target string) (CoreUpdateIn
 	}
 	checkCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	if output, err := exec.CommandContext(checkCtx, candidate, "check", "-c", u.manager.ConfigPath).CombinedOutput(); err != nil {
+	if output, err := coreCommand(checkCtx, candidate, "check", "-c", u.manager.ConfigPath).CombinedOutput(); err != nil {
 		return info, fmt.Errorf("新内核无法读取当前配置: %s: %w", strings.TrimSpace(string(output)), err)
 	}
 	if err := replaceCoreBinary(installed, candidate, u.manager.Status() == "running", u.restart); err != nil {

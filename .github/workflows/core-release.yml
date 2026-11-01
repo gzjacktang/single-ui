@@ -90,6 +90,7 @@ jobs:
           for architecture in amd64 arm64; do
             (
               cd "$RUNNER_TEMP/sing-box"
+              go mod edit -godebug=multipathtcp=0
               GOOS=linux GOARCH="$architecture" CGO_ENABLED=0 \
                 go build -trimpath -tags "$CORE_TAGS" \
                 -ldflags="-s -w -X github.com/sagernet/sing-box/constant.Version=${CORE_VERSION}" \

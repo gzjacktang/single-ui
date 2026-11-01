@@ -2,6 +2,7 @@ package core
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -56,7 +57,10 @@ func (m *Manager) Start() error {
 		}
 	}
 
-	m.cmd = exec.Command(m.BinPath, "run", "-c", m.ConfigPath)
+	if err := m.checkNetworkPolicy(); err != nil {
+		return err
+	}
+	m.cmd = coreCommand(context.Background(), m.BinPath, "run", "-c", m.ConfigPath)
 	stderr, _ := m.cmd.StderrPipe()
 
 	if err := m.cmd.Start(); err != nil {
@@ -123,7 +127,10 @@ func (m *Manager) Restart() error {
 }
 
 func (m *Manager) Check() error {
-	out, err := exec.Command(m.BinPath, "check", "-c", m.ConfigPath).CombinedOutput()
+	if err := m.checkNetworkPolicy(); err != nil {
+		return err
+	}
+	out, err := coreCommand(context.Background(), m.BinPath, "check", "-c", m.ConfigPath).CombinedOutput()
 	if err != nil {
 		return errors.New(strings.TrimSpace(string(out)))
 	}
@@ -154,7 +161,7 @@ func (m *Manager) Status() string {
 }
 
 func (m *Manager) Version() string {
-	out, err := exec.Command(m.BinPath, "version").Output()
+	out, err := coreCommand(context.Background(), m.BinPath, "version").Output()
 	if err != nil {
 		return "unknown"
 	}
